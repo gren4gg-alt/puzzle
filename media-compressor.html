@@ -141,11 +141,17 @@
         ▶️ Start compressing
       </button>
 
-      <div id="audioProgressWrap" class="hidden space-y-1">
+      <div id="audioProgressWrap" class="hidden space-y-2">
         <div class="progress-track h-2 rounded-full overflow-hidden">
           <div id="audioProgressFill" class="progress-fill h-full" style="width:0%"></div>
         </div>
         <p id="audioProgressLabel" class="text-xs text-slate-500"></p>
+
+        <!-- Video ad shown only while compression is running. Swap #audioAdSlot's
+             contents for your real ad SDK embed (e.g. Google Ad Manager video ad). -->
+        <div class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
+          <div id="audioAdSlot">Ad playing while your audio compresses…</div>
+        </div>
       </div>
 
       <div id="audioResult" class="hidden space-y-3">
@@ -206,11 +212,17 @@
         ▶️ Start compressing
       </button>
 
-      <div id="videoProgressWrap" class="hidden space-y-1">
+      <div id="videoProgressWrap" class="hidden space-y-2">
         <div class="progress-track h-2 rounded-full overflow-hidden">
           <div id="videoProgressFill" class="progress-fill h-full" style="width:0%"></div>
         </div>
         <p id="videoProgressLabel" class="text-xs text-slate-500"></p>
+
+        <!-- Video ad shown only while compression is running. Swap #videoAdSlot's
+             contents for your real ad SDK embed (e.g. Google Ad Manager video ad). -->
+        <div class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
+          <div id="videoAdSlot">Ad playing while your video compresses…</div>
+        </div>
       </div>
 
       <video id="sourceVideoEl" class="hidden"></video>
