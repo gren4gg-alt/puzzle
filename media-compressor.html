@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Compressor — shrink photos, audio & video in your browser</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google AdSense — replace with your real publisher id before going live -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --ink:#1b1230;
+    --paper:#faf7f2;
+    --accent:#6366f1;
+    --accent-soft:#eef0fe;
+    --line: rgba(27,18,48,.12);
+  }
+  body{ font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif; background:var(--paper); color:var(--ink); }
+  .font-display{ font-family: Georgia, 'Times New Roman', serif; }
+  .mode-tab.active{ background:var(--accent); color:#fff; }
+  .mode-tab{ color:#475569; }
+  .progress-track{ background:#e5e7eb; }
+  .progress-fill{ background:var(--accent); transition: width .15s linear; }
+  input[type=range]{ accent-color: var(--accent); }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ======================= TOP AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="5555555555"></ins>
+</div>
+
+<!-- ======================= HEADER ======================= -->
+<header class="w-full border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white grid place-items-center font-display font-bold">C</div>
+      <div>
+        <h1 class="font-display text-lg leading-tight font-bold">Media Compressor</h1>
+        <p class="text-[11px] text-slate-500 -mt-0.5">Everything runs on your device. Nothing is uploaded anywhere.</p>
+      </div>
+    </div>
+    <a href="index.html"
+      class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium shadow-sm">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11l9-8 9 8M5 10v10h14V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All apps
+    </a>
+  </div>
+</header>
+
+<!-- ======================= TABS ======================= -->
+<div class="max-w-5xl mx-auto w-full px-4 mt-6">
+  <div class="inline-flex flex-wrap rounded-xl border border-slate-300 bg-white p-1 shadow-sm gap-1">
+    <button data-tab="image" class="mode-tab active px-5 py-2 rounded-lg text-sm font-semibold">🖼️ Image</button>
+    <button data-tab="audio" class="mode-tab px-5 py-2 rounded-lg text-sm font-semibold">🎵 Audio</button>
+    <button data-tab="video" class="mode-tab px-5 py-2 rounded-lg text-sm font-semibold">🎬 Video</button>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1 space-y-6">
+
+  <!-- ======================= IMAGE PANEL ======================= -->
+  <section id="panel-image">
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div>
+          <label class="text-sm font-semibold block mb-1">1. Choose a photo</label>
+          <input id="imgFileInput" type="file" accept="image/*"
+            class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold block mb-1">Output format</label>
+          <select id="imgFormat" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="image/jpeg">JPEG — smallest, best for photos</option>
+            <option value="image/webp">WebP — smaller than JPEG, wide support</option>
+            <option value="image/png">PNG — lossless, larger file</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold block mb-1">
+            Quality: <span id="imgQualityVal">75</span>%
+          </label>
+          <input id="imgQuality" type="range" min="10" max="100" value="75" class="w-full"/>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold block mb-1">Max dimension</label>
+          <select id="imgMaxDim" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="0">Keep original size</option>
+            <option value="1920">1920px (Full HD)</option>
+            <option value="1280" selected>1280px</option>
+            <option value="800">800px</option>
+          </select>
+        </div>
+
+        <div id="imgStats" class="hidden text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3">
+          Original: <span id="imgOrigSize"></span> → Compressed: <span id="imgNewSize"></span>
+          (<span id="imgSaved"></span> smaller)
+        </div>
+
+        <button id="imgDownloadBtn" disabled
+          class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700">
+          ⬇️ Download compressed image
+        </button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-center min-h-[320px]">
+        <p id="imgPlaceholder" class="text-slate-400 text-sm text-center">Upload a photo to preview<br/>the compressed result here.</p>
+        <img id="imgPreview" class="hidden max-w-full max-h-[420px] rounded-lg border border-slate-200"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= AUDIO PANEL ======================= -->
+  <section id="panel-audio" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 max-w-xl">
+      <div>
+        <label class="text-sm font-semibold block mb-1">1. Choose an audio file</label>
+        <input id="audioFileInput" type="file" accept="audio/*"
+          class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1">Target bitrate</label>
+        <select id="audioBitrate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="64">64 kbps — smallest, voice/podcasts</option>
+          <option value="96" selected>96 kbps — good balance</option>
+          <option value="128">128 kbps — near-original quality</option>
+        </select>
+      </div>
+
+      <button id="audioStartBtn" disabled
+        class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700">
+        ▶️ Start compressing
+      </button>
+
+      <div id="audioProgressWrap" class="hidden space-y-1">
+        <div class="progress-track h-2 rounded-full overflow-hidden">
+          <div id="audioProgressFill" class="progress-fill h-full" style="width:0%"></div>
+        </div>
+        <p id="audioProgressLabel" class="text-xs text-slate-500"></p>
+      </div>
+
+      <div id="audioResult" class="hidden space-y-3">
+        <audio id="audioPlayer" controls class="w-full"></audio>
+        <div class="text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3">
+          Original: <span id="audioOrigSize"></span> → Compressed: <span id="audioNewSize"></span>
+          (<span id="audioSaved"></span> smaller)
+        </div>
+        <a id="audioDownloadBtn" download="compressed-audio.webm"
+          class="block text-center w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+          ⬇️ Download compressed audio (.webm)
+        </a>
+      </div>
+
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Your browser re-encodes the audio in real time using its built-in Opus
+        encoder — no upload, no external service. This means compression takes
+        roughly as long as the audio's own length. Output is saved as
+        <code>.webm</code> (Opus audio), which is small and widely playable,
+        but not the original <code>.mp3</code> format.
+      </p>
+      <p id="audioUnsupported" class="hidden text-xs text-red-600">
+        Your browser doesn't support in-browser audio recording (MediaRecorder).
+        Try Chrome, Edge, or Firefox instead.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================= VIDEO PANEL ======================= -->
+  <section id="panel-video" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 max-w-xl">
+      <div>
+        <label class="text-sm font-semibold block mb-1">1. Choose a video file</label>
+        <input id="videoFileInput" type="file" accept="video/*"
+          class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1">Max height (resolution)</label>
+        <select id="videoMaxHeight" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="0">Keep original resolution</option>
+          <option value="720" selected>720p</option>
+          <option value="480">480p</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1">Target video bitrate</label>
+        <select id="videoBitrate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="800">800 kbps — smallest</option>
+          <option value="1500" selected>1.5 Mbps — good balance</option>
+          <option value="2500">2.5 Mbps — near-original quality</option>
+        </select>
+      </div>
+
+      <button id="videoStartBtn" disabled
+        class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700">
+        ▶️ Start compressing
+      </button>
+
+      <div id="videoProgressWrap" class="hidden space-y-1">
+        <div class="progress-track h-2 rounded-full overflow-hidden">
+          <div id="videoProgressFill" class="progress-fill h-full" style="width:0%"></div>
+        </div>
+        <p id="videoProgressLabel" class="text-xs text-slate-500"></p>
+      </div>
+
+      <video id="sourceVideoEl" class="hidden"></video>
+      <canvas id="videoCanvas" class="hidden"></canvas>
+
+      <div id="videoResult" class="hidden space-y-3">
+        <video id="videoPreview" controls class="w-full rounded-lg border border-slate-200"></video>
+        <div class="text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3">
+          Original: <span id="videoOrigSize"></span> → Compressed: <span id="videoNewSize"></span>
+          (<span id="videoSaved"></span> smaller)
+        </div>
+        <a id="videoDownloadBtn" download="compressed-video.webm"
+          class="block text-center w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+          ⬇️ Download compressed video (.webm)
+        </a>
+      </div>
+
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Your browser re-encodes the video in real time by playing it back and
+        capturing it with its built-in encoder — no upload, no external
+        service. Compression takes roughly as long as the video's own length.
+        Output is saved as <code>.webm</code> (VP9/VP8 + Opus), which is small
+        and widely playable, but not the original file format.
+      </p>
+      <p id="videoUnsupported" class="hidden text-xs text-red-600">
+        Your browser doesn't support in-browser video capture/recording
+        (captureStream + MediaRecorder). Try Chrome, Edge, or Firefox instead.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="6666666666"></ins>
+</div>
+
+<footer class="text-center text-xs text-slate-400 py-4">
+  100% client-side. Files never leave your device.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function fmtBytes(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+function pctSaved(orig, now) {
+  if (orig <= 0) return "0%";
+  return Math.max(0, Math.round((1 - now / orig) * 100)) + "%";
+}
+// Scales w×h down (preserving aspect ratio) so the longer side is at most
+// maxDim. Never upscales, and 0/falsy maxDim means "keep original size".
+function fitWithinMax(w, h, maxDim) {
+  if (!maxDim) return { w, h };
+  const longer = Math.max(w, h);
+  if (longer <= maxDim) return { w, h };
+  const scale = maxDim / longer;
+  return { w: Math.round(w * scale), h: Math.round(h * scale) };
+}
+
+// =====================================================================
+// TAB SWITCHING
+// =====================================================================
+document.querySelectorAll(".mode-tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mode-tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["image", "audio", "video"].forEach((name) => {
+      $(`panel-${name}`).classList.toggle("hidden", name !== btn.dataset.tab);
+    });
+  });
+});
+
+/* =====================================================================
+   IMAGE COMPRESSION
+   Pure Canvas API: draw the photo at (optionally smaller) dimensions,
+   then export via canvas.toBlob() with a quality setting. No libraries,
+   no uploads — this is a built-in browser capability.
+   ===================================================================== */
+let imgFile = null, imgOriginalImage = null;
+
+$("imgFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  imgFile = file;
+  const img = new Image();
+  img.onload = () => {
+    imgOriginalImage = img;
+    $("imgDownloadBtn").disabled = false;
+    runImageCompression();
+  };
+  img.src = URL.createObjectURL(file);
+});
+["imgFormat", "imgQuality", "imgMaxDim"].forEach((id) => {
+  $(id).addEventListener("input", () => {
+    if (id === "imgQuality") $("imgQualityVal").textContent = $("imgQuality").value;
+    if (imgOriginalImage) runImageCompression();
+  });
+});
+
+let imgCompressedBlob = null;
+function runImageCompression() {
+  const format = $("imgFormat").value;
+  const quality = parseInt($("imgQuality").value, 10) / 100;
+  const maxDim = parseInt($("imgMaxDim").value, 10);
+  const { w, h } = fitWithinMax(imgOriginalImage.width, imgOriginalImage.height, maxDim);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(imgOriginalImage, 0, 0, w, h);
+
+  canvas.toBlob((blob) => {
+    imgCompressedBlob = blob;
+    const url = URL.createObjectURL(blob);
+    $("imgPreview").src = url;
+    $("imgPreview").classList.remove("hidden");
+    $("imgPlaceholder").classList.add("hidden");
+
+    $("imgStats").classList.remove("hidden");
+    $("imgOrigSize").textContent = fmtBytes(imgFile.size);
+    $("imgNewSize").textContent = fmtBytes(blob.size);
+    $("imgSaved").textContent = pctSaved(imgFile.size, blob.size);
+  }, format, format === "image/png" ? undefined : quality);
+}
+
+$("imgDownloadBtn").addEventListener("click", () => {
+  if (!imgCompressedBlob) return;
+  const ext = $("imgFormat").value.split("/")[1].replace("jpeg", "jpg");
+  const url = URL.createObjectURL(imgCompressedBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `compressed.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+});
+
+/* =====================================================================
+   AUDIO COMPRESSION
+   No third-party codec library. We decode the file with the Web Audio
+   API, play it back through a MediaStreamDestination, and use the
+   browser's own MediaRecorder (Opus encoder) to capture it at a lower
+   bitrate. This genuinely re-encodes the audio — it isn't a trick —
+   but it necessarily runs in real time (a 3-minute song takes ~3
+   minutes to compress) because MediaRecorder only records live streams.
+   ===================================================================== */
+let audioFile = null;
+
+const audioRecorderSupported =
+  typeof MediaRecorder !== "undefined" &&
+  (MediaRecorder.isTypeSupported?.("audio/webm;codecs=opus") ?? true);
+
+if (!audioRecorderSupported) {
+  $("audioUnsupported").classList.remove("hidden");
+  $("audioFileInput").disabled = true;
+}
+
+$("audioFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  audioFile = file;
+  $("audioStartBtn").disabled = false;
+  $("audioResult").classList.add("hidden");
+  $("audioProgressWrap").classList.add("hidden");
+});
+
+$("audioStartBtn").addEventListener("click", async () => {
+  if (!audioFile) return;
+  $("audioStartBtn").disabled = true;
+  $("audioProgressWrap").classList.remove("hidden");
+  $("audioResult").classList.add("hidden");
+
+  try {
+    const blob = await compressAudio(audioFile, parseInt($("audioBitrate").value, 10), (p) => {
+      $("audioProgressFill").style.width = Math.round(p * 100) + "%";
+      $("audioProgressLabel").textContent = `Encoding… ${Math.round(p * 100)}%`;
+    });
+    $("audioProgressWrap").classList.add("hidden");
+    $("audioResult").classList.remove("hidden");
+    const url = URL.createObjectURL(blob);
+    $("audioPlayer").src = url;
+    $("audioDownloadBtn").href = url;
+    $("audioOrigSize").textContent = fmtBytes(audioFile.size);
+    $("audioNewSize").textContent = fmtBytes(blob.size);
+    $("audioSaved").textContent = pctSaved(audioFile.size, blob.size);
+  } catch (err) {
+    $("audioProgressLabel").textContent = "Something went wrong: " + err.message;
+  } finally {
+    $("audioStartBtn").disabled = false;
+  }
+});
+
+function compressAudio(file, bitrateKbps, onProgress) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+
+      const dest = audioCtx.createMediaStreamDestination();
+      // Keep the context alive/audible-enough without blasting real audio —
+      // a near-silent gain node connected to speakers prevents some browsers
+      // from throttling background audio processing.
+      const silentGain = audioCtx.createGain();
+      silentGain.gain.value = 0.0001;
+      source.connect(dest);
+      source.connect(silentGain);
+      silentGain.connect(audioCtx.destination);
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus" : "audio/webm";
+      const recorder = new MediaRecorder(dest.stream, {
+        mimeType, audioBitsPerSecond: bitrateKbps * 1000,
+      });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        audioCtx.close();
+        resolve(new Blob(chunks, { type: "audio/webm" }));
+      };
+
+      const startTime = audioCtx.currentTime;
+      const duration = audioBuffer.duration;
+      const progressTimer = setInterval(() => {
+        const elapsed = audioCtx.currentTime - startTime;
+        onProgress(Math.min(1, elapsed / duration));
+      }, 200);
+
+      source.onended = () => {
+        clearInterval(progressTimer);
+        onProgress(1);
+        setTimeout(() => recorder.stop(), 250);
+      };
+
+      recorder.start();
+      source.start();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/* =====================================================================
+   VIDEO COMPRESSION
+   Same real-time re-record principle as audio, using the browser's
+   native HTMLMediaElement.captureStream() + MediaRecorder (VP8/VP9 +
+   Opus). If a smaller resolution is requested we draw each frame to a
+   canvas and capture that canvas instead; otherwise we capture the
+   video element's stream directly. No external encoder libraries.
+   ===================================================================== */
+let videoFile = null;
+
+const videoRecorderSupported =
+  typeof MediaRecorder !== "undefined" &&
+  !!(HTMLMediaElement.prototype.captureStream || HTMLMediaElement.prototype.mozCaptureStream);
+
+if (!videoRecorderSupported) {
+  $("videoUnsupported").classList.remove("hidden");
+  $("videoFileInput").disabled = true;
+}
+
+$("videoFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  videoFile = file;
+  $("videoStartBtn").disabled = false;
+  $("videoResult").classList.add("hidden");
+  $("videoProgressWrap").classList.add("hidden");
+});
+
+$("videoStartBtn").addEventListener("click", async () => {
+  if (!videoFile) return;
+  $("videoStartBtn").disabled = true;
+  $("videoProgressWrap").classList.remove("hidden");
+  $("videoResult").classList.add("hidden");
+
+  try {
+    const maxHeight = parseInt($("videoMaxHeight").value, 10);
+    const bitrateKbps = parseInt($("videoBitrate").value, 10);
+    const blob = await compressVideo(videoFile, maxHeight, bitrateKbps, (p) => {
+      $("videoProgressFill").style.width = Math.round(p * 100) + "%";
+      $("videoProgressLabel").textContent = `Encoding… ${Math.round(p * 100)}%`;
+    });
+    $("videoProgressWrap").classList.add("hidden");
+    $("videoResult").classList.remove("hidden");
+    const url = URL.createObjectURL(blob);
+    $("videoPreview").src = url;
+    $("videoDownloadBtn").href = url;
+    $("videoOrigSize").textContent = fmtBytes(videoFile.size);
+    $("videoNewSize").textContent = fmtBytes(blob.size);
+    $("videoSaved").textContent = pctSaved(videoFile.size, blob.size);
+  } catch (err) {
+    $("videoProgressLabel").textContent = "Something went wrong: " + err.message;
+  } finally {
+    $("videoStartBtn").disabled = false;
+  }
+});
+
+function compressVideo(file, maxHeight, bitrateKbps, onProgress) {
+  return new Promise((resolve, reject) => {
+    const video = $("sourceVideoEl");
+    video.src = URL.createObjectURL(file);
+    video.muted = false; // muted playback can suppress captured audio in some browsers
+    video.volume = 0;    // silence the actual speaker output instead
+    video.playsInline = true;
+
+    video.onloadedmetadata = async () => {
+      try {
+        const srcW = video.videoWidth, srcH = video.videoHeight;
+        const { w, h } = maxHeight && srcH > maxHeight
+          ? { w: Math.round(srcW * (maxHeight / srcH)), h: maxHeight }
+          : { w: srcW, h: srcH };
+
+        const nativeStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+        let outStream;
+
+        if (w !== srcW || h !== srcH) {
+          // Downscaling requested: draw frames to a canvas and capture that.
+          const canvas = $("videoCanvas");
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          let drawing = true;
+          function drawLoop() {
+            if (!drawing) return;
+            ctx.drawImage(video, 0, 0, w, h);
+            requestAnimationFrame(drawLoop);
+          }
+          drawLoop();
+          const canvasStream = canvas.captureStream(30);
+          outStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...nativeStream.getAudioTracks(),
+          ]);
+          video._stopDrawing = () => { drawing = false; };
+        } else {
+          outStream = nativeStream;
+        }
+
+        const mimeCandidates = [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm",
+        ];
+        const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+
+        const recorder = new MediaRecorder(outStream, {
+          mimeType, videoBitsPerSecond: bitrateKbps * 1000,
+        });
+        const chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+        recorder.onstop = () => {
+          if (video._stopDrawing) video._stopDrawing();
+          resolve(new Blob(chunks, { type: "video/webm" }));
+        };
+
+        video.onended = () => {
+          onProgress(1);
+          setTimeout(() => recorder.stop(), 250);
+        };
+        video.ontimeupdate = () => {
+          if (video.duration) onProgress(video.currentTime / video.duration);
+        };
+
+        recorder.start();
+        await video.play();
+      } catch (err) {
+        reject(err);
+      }
+    };
+    video.onerror = () => reject(new Error("Could not read this video file."));
+  });
+}
+</script>
+</body>
+</html>
