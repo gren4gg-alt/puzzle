@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Hub — Small Web Toys</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google AdSense — replace with your real publisher id before going live -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --ink:#1b1230;
+    --paper:#faf7f2;
+    --accent:#6366f1;
+    --accent-soft:#eef0fe;
+    --line: rgba(27,18,48,.12);
+  }
+  body{ font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif; background:var(--paper); color:var(--ink); }
+  .font-display{ font-family: Georgia, 'Times New Roman', serif; }
+
+  .app-card{
+    border: 1px solid var(--line);
+    background: #fff;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .app-card:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(27,18,48,.10);
+    border-color: var(--accent);
+  }
+  .tag{
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ======================= TOP AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="3333333333"></ins>
+</div>
+
+<!-- ======================= HERO ======================= -->
+<header class="max-w-5xl mx-auto w-full px-4 pt-14 pb-10 text-center">
+  <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full tag text-xs font-semibold mb-5">
+    ● built with plain HTML, CSS &amp; JS — no accounts, no servers
+  </div>
+  <h1 class="font-display text-4xl sm:text-5xl font-bold leading-tight">
+    Small web toys,<br class="hidden sm:block"/> made to be shared.
+  </h1>
+  <p class="text-slate-500 mt-4 max-w-xl mx-auto">
+    Each app below runs entirely in your browser and lives in its own page.
+    Pick one to get started — nothing to install, nothing to sign up for.
+  </p>
+</header>
+
+<!-- ======================= APP GRID ======================= -->
+<main class="max-w-5xl mx-auto w-full px-4 pb-16 flex-1">
+  <div id="appGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+</main>
+
+<!-- ======================= BOTTOM AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="4444444444"></ins>
+</div>
+
+<footer class="text-center text-xs text-slate-400 py-4">
+  Add new apps by editing the <code class="text-slate-500">APPS</code> list in this page's source.
+</footer>
+
+<script>
+  /* =====================================================================
+     APP REGISTRY
+     Add a new entry here whenever you ship another single-file app.
+     Each app lives in its own HTML file alongside this one.
+     ===================================================================== */
+  const APPS = [
+    {
+      name: "Photo Puzzle Exchange",
+      url: "puzzle-exchange.html",
+      tag: "Game",
+      emoji: "🧩",
+      description: "Scramble a photo into a puzzle, share the file, and let someone else solve it — the answer key travels inside the image itself."
+    },
+    // Add more apps here as you build them, e.g.:
+    // {
+    //   name: "Your Next App",
+    //   url: "your-next-app.html",
+    //   tag: "Tool",
+    //   emoji: "✨",
+    //   description: "A short one-line description of what it does."
+    // },
+  ];
+
+  const grid = document.getElementById("appGrid");
+  APPS.forEach((app) => {
+    const card = document.createElement("a");
+    card.href = app.url;
+    card.className = "app-card rounded-2xl p-5 flex flex-col gap-3";
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-3xl">${app.emoji}</span>
+        <span class="tag text-[11px] font-semibold px-2 py-1 rounded-full">${app.tag}</span>
+      </div>
+      <h2 class="font-display text-lg font-bold">${app.name}</h2>
+      <p class="text-sm text-slate-500 leading-relaxed flex-1">${app.description}</p>
+      <span class="text-sm font-semibold text-indigo-600">Open app →</span>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (APPS.length === 0) {
+    grid.innerHTML = `<p class="text-slate-400 text-sm col-span-full text-center py-10">No apps published yet — check back soon.</p>`;
+  }
+</script>
+</body>
+</html>
