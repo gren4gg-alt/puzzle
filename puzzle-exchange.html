@@ -262,6 +262,8 @@
 const $ = (id) => document.getElementById(id);
 const KEY_START = "KEY_START:";
 const KEY_END = ":KEY_END";
+const STEG_ROWS = 2; // extra pixel rows appended at the bottom of every exported image for Method A
+const MAX_WORK_DIM = 900; // cap the working canvas's longer side so huge photos stay fast
 
 function shuffleArray(arr) {
   const a = arr.slice();
@@ -334,46 +336,51 @@ function buildScrambledPreview() {
   const order = shuffleArray([...Array(n).keys()]);
   currentOrder = order;
 
-  const SIZE = 600; // square working canvas so pieces are always square-cut
-  const cell = SIZE / currentGrid;
+  // Work at the source photo's own aspect ratio — the FULL photo is used,
+  // nothing is cropped. We just cap the longer side so huge uploads stay fast.
+  const { w: WORK_W, h: WORK_H } = fitWithinMax(sourceImg.width, sourceImg.height, MAX_WORK_DIM);
+  const cellW = WORK_W / currentGrid;
+  const cellH = WORK_H / currentGrid;
 
-  // draw the source image cropped/cover-fit into a square offscreen canvas
-  const squareCanvas = document.createElement("canvas");
-  squareCanvas.width = SIZE;
-  squareCanvas.height = SIZE;
-  const sctx = squareCanvas.getContext("2d");
-  const { sx, sy, sSize } = coverCrop(sourceImg.width, sourceImg.height);
-  sctx.drawImage(sourceImg, sx, sy, sSize, sSize, 0, 0, SIZE, SIZE);
+  const workCanvas = document.createElement("canvas");
+  workCanvas.width = WORK_W;
+  workCanvas.height = WORK_H;
+  const sctx = workCanvas.getContext("2d");
+  sctx.drawImage(sourceImg, 0, 0, sourceImg.width, sourceImg.height, 0, 0, WORK_W, WORK_H);
 
-  // build scrambled canvas from the square source
-  previewCanvas.width = SIZE;
-  previewCanvas.height = SIZE;
+  // build scrambled canvas from the full-photo source
+  previewCanvas.width = WORK_W;
+  previewCanvas.height = WORK_H;
   for (let slot = 0; slot < n; slot++) {
     const origIndex = order[slot];
     const srow = Math.floor(origIndex / currentGrid), scol = origIndex % currentGrid;
     const drow = Math.floor(slot / currentGrid), dcol = slot % currentGrid;
     previewCtx.drawImage(
-      squareCanvas,
-      scol * cell, srow * cell, cell, cell,
-      dcol * cell, drow * cell, cell, cell
+      workCanvas,
+      scol * cellW, srow * cellH, cellW, cellH,
+      dcol * cellW, drow * cellH, cellW, cellH
     );
   }
   // faint grid lines so it visually reads as a puzzle
   previewCtx.strokeStyle = "rgba(255,255,255,.5)";
   previewCtx.lineWidth = 2;
   for (let i = 1; i < currentGrid; i++) {
-    previewCtx.beginPath(); previewCtx.moveTo(i * cell, 0); previewCtx.lineTo(i * cell, SIZE); previewCtx.stroke();
-    previewCtx.beginPath(); previewCtx.moveTo(0, i * cell); previewCtx.lineTo(SIZE, i * cell); previewCtx.stroke();
+    previewCtx.beginPath(); previewCtx.moveTo(i * cellW, 0); previewCtx.lineTo(i * cellW, WORK_H); previewCtx.stroke();
+    previewCtx.beginPath(); previewCtx.moveTo(0, i * cellH); previewCtx.lineTo(WORK_W, i * cellH); previewCtx.stroke();
   }
 
-  scrambledCanvas = squareCanvas; // keep the clean (line-free) version for export pieces
+  scrambledCanvas = workCanvas; // keep the clean (line-free) version for export pieces
   $("createPlaceholder").classList.add("hidden");
   previewCanvas.classList.remove("hidden");
 }
 
-function coverCrop(w, h) {
-  const sSize = Math.min(w, h);
-  return { sx: (w - sSize) / 2, sy: (h - sSize) / 2, sSize };
+// Scales w×h down (preserving aspect ratio) so the longer side is at most
+// maxDim. Never upscales. The FULL image is always kept — no cropping.
+function fitWithinMax(w, h, maxDim) {
+  const longer = Math.max(w, h);
+  if (longer <= maxDim) return { w, h };
+  const scale = maxDim / longer;
+  return { w: Math.round(w * scale), h: Math.round(h * scale) };
 }
 
 // ---------- DOWNLOAD: builds the final key-embedded PNG ----------
@@ -384,14 +391,15 @@ $("downloadBtn").addEventListener("click", () => {
 
 async function generateAndDownload() {
   const n = currentGrid * currentGrid;
-  const SIZE = 600;
-  const cell = SIZE / currentGrid;
-  const STEG_ROWS = 2; // extra pixel rows at bottom for Method A
+  const WORK_W = scrambledCanvas.width;
+  const WORK_H = scrambledCanvas.height;
+  const cellW = WORK_W / currentGrid;
+  const cellH = WORK_H / currentGrid;
 
-  // Final export canvas = scrambled image + steganography strip
+  // Final export canvas = scrambled image (full photo, no cropping) + steganography strip
   const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = SIZE;
-  exportCanvas.height = SIZE + STEG_ROWS;
+  exportCanvas.width = WORK_W;
+  exportCanvas.height = WORK_H + STEG_ROWS;
   const ectx = exportCanvas.getContext("2d");
 
   for (let slot = 0; slot < n; slot++) {
@@ -400,8 +408,8 @@ async function generateAndDownload() {
     const drow = Math.floor(slot / currentGrid), dcol = slot % currentGrid;
     ectx.drawImage(
       scrambledCanvas,
-      scol * cell, srow * cell, cell, cell,
-      dcol * cell, drow * cell, cell, cell
+      scol * cellW, srow * cellH, cellW, cellH,
+      dcol * cellW, drow * cellH, cellW, cellH
     );
   }
 
@@ -409,7 +417,7 @@ async function generateAndDownload() {
   const keyJson = JSON.stringify(keyObj);
 
   // ---- Method A: write key into the bottom pixel strip ----
-  writeStegoStrip(ectx, SIZE, STEG_ROWS, keyJson);
+  writeStegoStrip(ectx, WORK_W, STEG_ROWS, keyJson);
 
   // ---- Export to PNG blob, then append Method B trailer bytes ----
   exportCanvas.toBlob(async (blob) => {
@@ -524,6 +532,7 @@ let solveGrid = 3;
 let solveOrder = [];       // order[slot] = originalIndex (from embedded key)
 let solvePieces = [];      // dataURLs sliced from the uploaded scrambled image, indexed by ORIGINAL index
 let boardState = [];       // boardState[slot] = originalIndex currently placed there, or null
+let solvePuzzleAspect = 1; // width / height of the full (uncropped) puzzle photo
 
 $("solveFileInput").addEventListener("change", async (e) => {
   const file = e.target.files[0];
@@ -545,7 +554,7 @@ $("solveFileInput").addEventListener("change", async (e) => {
     tmp.width = img.width; tmp.height = img.height;
     const tctx = tmp.getContext("2d");
     tctx.drawImage(img, 0, 0);
-    keyObj = readStegoStrip(tctx, img.width, 2, img.height) || readStegoStrip(tctx, img.width, 1, img.height);
+    keyObj = readStegoStrip(tctx, img.width, STEG_ROWS, img.height) || readStegoStrip(tctx, img.width, 1, img.height);
     method = "A (pixel steganography)";
   }
 
@@ -581,13 +590,19 @@ function startSolving(img, keyObj) {
   solveOrder = keyObj.order;
   const n = solveGrid * solveGrid;
 
-  // Slice the (square, possibly with steg strip below it — ignore extra rows)
-  const SIZE = Math.min(img.width, img.height); // square puzzle area
-  const cell = SIZE / solveGrid;
-  const squareCanvas = document.createElement("canvas");
-  squareCanvas.width = SIZE; squareCanvas.height = SIZE;
-  const sctx = squareCanvas.getContext("2d");
-  sctx.drawImage(img, 0, 0, SIZE, SIZE, 0, 0, SIZE, SIZE);
+  // The puzzle area is the FULL uploaded image, minus the thin steganography
+  // strip we always append at the very bottom. No cropping — whatever
+  // aspect ratio the sender's photo had is preserved here.
+  const puzzleW = img.width;
+  const puzzleH = Math.max(1, img.height - STEG_ROWS);
+  solvePuzzleAspect = puzzleW / puzzleH;
+
+  const cellW = puzzleW / solveGrid;
+  const cellH = puzzleH / solveGrid;
+  const workCanvas = document.createElement("canvas");
+  workCanvas.width = puzzleW; workCanvas.height = puzzleH;
+  const sctx = workCanvas.getContext("2d");
+  sctx.drawImage(img, 0, 0, puzzleW, puzzleH, 0, 0, puzzleW, puzzleH);
 
   // For each scrambled slot, cut a piece image and remember its ORIGINAL index
   solvePieces = new Array(n);
@@ -595,9 +610,9 @@ function startSolving(img, keyObj) {
     const origIndex = solveOrder[slot];
     const drow = Math.floor(slot / solveGrid), dcol = slot % solveGrid;
     const pieceCanvas = document.createElement("canvas");
-    pieceCanvas.width = cell; pieceCanvas.height = cell;
+    pieceCanvas.width = cellW; pieceCanvas.height = cellH;
     pieceCanvas.getContext("2d").drawImage(
-      squareCanvas, dcol * cell, drow * cell, cell, cell, 0, 0, cell, cell
+      workCanvas, dcol * cellW, drow * cellH, cellW, cellH, 0, 0, cellW, cellH
     );
     solvePieces[origIndex] = pieceCanvas.toDataURL("image/png");
   }
@@ -614,16 +629,17 @@ function renderBoardAndTray() {
   boardGrid.innerHTML = "";
   trayGrid.innerHTML = "";
 
-  const boardPx = Math.min(480, window.innerWidth - 80);
-  const cellPx = Math.floor(boardPx / solveGrid);
-  boardGrid.style.gridTemplateColumns = `repeat(${solveGrid}, ${cellPx}px)`;
+  const boardPxW = Math.min(560, window.innerWidth - 80);
+  const cellPxW = Math.floor(boardPxW / solveGrid);
+  const cellPxH = Math.floor(cellPxW / solvePuzzleAspect);
+  boardGrid.style.gridTemplateColumns = `repeat(${solveGrid}, ${cellPxW}px)`;
   trayGrid.style.gridTemplateColumns = `repeat(3, minmax(0,1fr))`;
 
   for (let slot = 0; slot < n; slot++) {
     const el = document.createElement("div");
     el.className = "board-slot";
-    el.style.width = cellPx + "px";
-    el.style.height = cellPx + "px";
+    el.style.width = cellPxW + "px";
+    el.style.height = cellPxH + "px";
     el.dataset.slot = slot;
     boardGrid.appendChild(el);
   }
@@ -634,7 +650,7 @@ function renderBoardAndTray() {
     const el = document.createElement("div");
     el.className = "tray-piece";
     el.style.width = "100%";
-    el.style.aspectRatio = "1/1";
+    el.style.aspectRatio = `${solvePuzzleAspect} / 1`;
     el.style.backgroundImage = `url(${solvePieces[origIndex]})`;
     el.dataset.piece = origIndex;
     trayGrid.appendChild(el);
@@ -745,11 +761,11 @@ $("downloadSolvedBtn").addEventListener("click", () => {
 // the puzzle is already solved.
 function downloadSolvedImage() {
   const n = solveGrid * solveGrid;
-  const cellPx = 200; // export resolution per cell, independent of on-screen size
-  const size = cellPx * solveGrid;
+  const cellPxW = 300; // export resolution per cell, independent of on-screen size
+  const cellPxH = Math.round(cellPxW / solvePuzzleAspect);
   const outCanvas = document.createElement("canvas");
-  outCanvas.width = size;
-  outCanvas.height = size;
+  outCanvas.width = cellPxW * solveGrid;
+  outCanvas.height = cellPxH * solveGrid;
   const octx = outCanvas.getContext("2d");
 
   const loaders = boardState.map((origIndex, slot) => {
@@ -757,7 +773,7 @@ function downloadSolvedImage() {
       const img = new Image();
       img.onload = () => {
         const row = Math.floor(slot / solveGrid), col = slot % solveGrid;
-        octx.drawImage(img, col * cellPx, row * cellPx, cellPx, cellPx);
+        octx.drawImage(img, col * cellPxW, row * cellPxH, cellPxW, cellPxH);
         resolve();
       };
       img.src = solvePieces[origIndex];
