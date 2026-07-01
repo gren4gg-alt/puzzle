@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Puzzle Exchange — Scramble & Solve</title>
+
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- ============================================================
+     GOOGLE ADS (AdSense) — replace ca-pub-XXXXXXXXXXXXXXXX with
+     your real publisher id, and the data-ad-slot values with your
+     real ad unit slot ids before going live.
+     ============================================================ -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --ink:#1b1230;
+    --paper:#faf7f2;
+    --piece-line: rgba(27,18,48,.18);
+  }
+  body{ font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif; background:var(--paper); color:var(--ink); }
+  .font-display{ font-family: Georgia, 'Times New Roman', serif; }
+
+  /* puzzle grid */
+  .board-slot, .tray-piece{
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .board-slot{
+    background-color:#eee;
+    border: 1px dashed var(--piece-line);
+  }
+  .board-slot.filled{ border-style: solid; }
+  .board-slot.correct{ outline: 3px solid #22c55e; outline-offset: -3px; }
+  .tray-piece{
+    cursor: grab;
+    touch-action: none;
+  }
+  .tray-piece:active{ cursor: grabbing; }
+  .dragging{
+    position: fixed;
+    z-index: 999;
+    pointer-events: none;
+    opacity: .92;
+    transform: scale(1.06);
+    box-shadow: 0 12px 24px rgba(0,0,0,.35) !important;
+  }
+  .slot-hover{ outline: 3px solid #6366f1; outline-offset: -3px; }
+
+  /* confetti */
+  #confettiCanvas{ position: fixed; inset:0; pointer-events:none; z-index: 60; }
+
+  /* rewarded ad modal */
+  .radial-progress{
+    background: conic-gradient(#6366f1 calc(var(--p) * 1%), #e5e7eb 0);
+  }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:8px; }
+</style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+<!-- ======================= TOP AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
+  <!-- Real AdSense unit: swap the data-ad-slot below for your own -->
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="1111111111"></ins>
+</div>
+
+<!-- ======================= HEADER / NAV ======================= -->
+<header class="w-full border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white grid place-items-center font-display font-bold">P</div>
+      <div>
+        <h1 class="font-display text-lg leading-tight font-bold">Photo Puzzle Exchange</h1>
+        <p class="text-[11px] text-slate-500 -mt-0.5">Scramble a photo. Send it. They solve it.</p>
+      </div>
+    </div>
+
+    <!-- "More apps" window / other-projects launcher -->
+    <div class="relative">
+      <button id="moreAppsBtn"
+        class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium shadow-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        More of our apps
+      </button>
+      <div id="moreAppsPanel"
+        class="hidden absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50">
+        <p class="text-xs font-semibold text-slate-400 uppercase px-2 py-1">Other projects</p>
+        <div id="moreAppsList" class="flex flex-col"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= MODE SWITCHER ======================= -->
+<div class="max-w-5xl mx-auto w-full px-4 mt-6">
+  <div class="inline-flex rounded-xl border border-slate-300 bg-white p-1 shadow-sm">
+    <button id="tabCreate" class="mode-tab px-5 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white">🧩 Create a Puzzle</button>
+    <button id="tabSolve" class="mode-tab px-5 py-2 rounded-lg text-sm font-semibold text-slate-600">🧠 Solve a Puzzle</button>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1">
+
+  <!-- ======================= CREATE MODE ======================= -->
+  <section id="createSection">
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Controls -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div>
+          <label class="text-sm font-semibold block mb-1">1. Choose a photo</label>
+          <input id="createFileInput" type="file" accept="image/*"
+            class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold block mb-1">2. Grid size</label>
+          <select id="gridSizeSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="2">2 × 2 — very easy</option>
+            <option value="3" selected>3 × 3 — default</option>
+            <option value="4">4 × 4 — tricky</option>
+            <option value="5">5 × 5 — hard</option>
+            <option value="6">6 × 6 — expert</option>
+          </select>
+        </div>
+
+        <button id="shuffleBtn" disabled
+          class="w-full py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold disabled:opacity-40">
+          🔀 Re-shuffle
+        </button>
+
+        <button id="downloadBtn" disabled
+          class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700">
+          ⬇️ Download & Share
+        </button>
+
+        <div class="text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 leading-relaxed">
+          <b>Important for WhatsApp:</b> send the downloaded file as a
+          <b>Document / File</b> (📎 → Document), not as a normal "Photo".
+          Sending as a photo re-compresses the image and can destroy the hidden
+          answer key. Sending as a document keeps every byte intact.
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center min-h-[320px]">
+        <p id="createPlaceholder" class="text-slate-400 text-sm text-center">Upload a photo to see the<br/>scrambled preview here.</p>
+        <canvas id="previewCanvas" class="hidden max-w-full rounded-lg border border-slate-200"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= SOLVE MODE ======================= -->
+  <section id="solveSection" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1">Upload the scrambled puzzle you received</label>
+        <input id="solveFileInput" type="file" accept="image/*"
+          class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+      </div>
+      <p id="solveStatus" class="text-sm text-slate-500"></p>
+    </div>
+
+    <div id="solveBoardWrap" class="hidden mt-6 grid lg:grid-cols-[1fr_260px] gap-6">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <p class="text-sm font-semibold mb-3">Drop pieces into the correct spot</p>
+        <div id="boardGrid" class="grid gap-1 mx-auto"></div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <p class="text-sm font-semibold mb-3">Pieces</p>
+        <div id="trayGrid" class="grid grid-cols-3 gap-2"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ======================= BOTTOM AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="2222222222"></ins>
+</div>
+
+<footer class="text-center text-xs text-slate-400 py-4">
+  100% client-side. No servers, no databases — the puzzle key travels inside the image file itself.
+</footer>
+
+<!-- ======================= REWARDED VIDEO AD MODAL ======================= -->
+<div id="rewardedAdModal" class="hidden fixed inset-0 bg-black/70 z-[70] grid place-items-center p-4">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center space-y-4">
+    <p class="text-sm font-semibold text-slate-700">Watch a short ad to unlock your download</p>
+    <!-- Placeholder "video ad" surface. Swap with your real rewarded-ad SDK
+         (Google Ad Manager / AdMob rewarded web ad) inside #adVideoSlot. -->
+    <div id="adVideoSlot" class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
+      Ad playing…
+    </div>
+    <div class="flex items-center justify-center">
+      <div id="adRing" class="radial-progress w-14 h-14 rounded-full grid place-items-center" style="--p:0">
+        <div class="w-11 h-11 bg-white rounded-full grid place-items-center text-xs font-semibold" id="adCountdown">5</div>
+      </div>
+    </div>
+    <button id="adSkipBtn" disabled
+      class="w-full py-2 rounded-lg bg-slate-200 text-slate-500 text-sm font-semibold disabled:opacity-60">
+      Please wait…
+    </button>
+  </div>
+</div>
+
+<!-- ======================= WIN BANNER ======================= -->
+<div id="winBanner" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-[80] bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl font-semibold text-center">
+  🎉 Solved! Great job piecing it together.
+</div>
+<canvas id="confettiCanvas" class="hidden"></canvas>
+
+<script>
+/* =====================================================================
+   PHOTO PUZZLE EXCHANGE — core application logic
+   ---------------------------------------------------------------------
+   HOW THE ANSWER KEY TRAVELS INSIDE THE IMAGE (no server, no database)
+   ---------------------------------------------------------------------
+   We use TWO complementary encodings, written every time a puzzle is
+   created, and read back in priority order by the receiver:
+
+   METHOD B — File Appending (PRIMARY, most robust)
+     The generated PNG blob is exported, then we append raw UTF-8 bytes
+     for the string  "KEY_START:{json}:KEY_END"  right after the PNG's
+     end-of-file marker. Browsers, WhatsApp "Document" sharing, email,
+     Drive, AirDrop etc. treat this as one opaque binary file and copy
+     it byte-for-byte — image viewers ignore the trailing bytes because
+     the PNG chunk stream already ended at IEND. This is why we tell
+     senders to share the file as a *Document*, not as a "Photo" — photo
+     mode forces WhatsApp to re-encode the image (which throws away any
+     trailing bytes AND recompresses pixels).
+
+   METHOD A — Visual Steganography (FALLBACK)
+     As a safety net for cases where an app strips trailing bytes but
+     keeps pixels reasonably intact (e.g. PNG passthrough), we also
+     write the same JSON string into a 1-pixel-tall strip along the
+     very bottom edge of the image: each character's char code is
+     split across the R/G/B channels of one pixel, preceded by a
+     header pixel storing the string length. This is a lossless
+     (PNG) encode, so as long as the image isn't re-compressed as a
+     lossy JPEG, it can still be recovered even if Method B's trailing
+     bytes were stripped.
+
+   The receiver tries Method B first (fast, byte-exact), then falls
+   back to Method A automatically.
+   ===================================================================== */
+
+// ---------- small utilities ----------
+const $ = (id) => document.getElementById(id);
+const KEY_START = "KEY_START:";
+const KEY_END = ":KEY_END";
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  // guarantee it's not accidentally already solved (for grids > 1 piece)
+  if (a.length > 1 && a.every((v, i) => v === i)) {
+    [a[0], a[1]] = [a[1], a[0]];
+  }
+  return a;
+}
+
+// =====================================================================
+// MORE APPS PANEL (edit this array to point to your other projects)
+// =====================================================================
+const OTHER_PROJECTS = [
+  { name: "Word Ladder Duel", url: "https://example.com/word-ladder" },
+  { name: "Pixel Pet Habits", url: "https://example.com/pixel-pet" },
+  { name: "QuickSplit Bill", url: "https://example.com/quicksplit" },
+];
+
+(function initMoreApps() {
+  const list = $("moreAppsList");
+  OTHER_PROJECTS.forEach((p) => {
+    const a = document.createElement("a");
+    a.href = p.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.className = "flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 text-sm text-slate-700";
+    a.innerHTML = `<span>${p.name}</span><span aria-hidden="true">↗</span>`;
+    list.appendChild(a);
+  });
+  $("moreAppsBtn").addEventListener("click", () => {
+    $("moreAppsPanel").classList.toggle("hidden");
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#moreAppsBtn") && !e.target.closest("#moreAppsPanel")) {
+      $("moreAppsPanel").classList.add("hidden");
+    }
+  });
+})();
+
+// =====================================================================
+// MODE SWITCHER
+// =====================================================================
+const tabCreate = $("tabCreate"), tabSolve = $("tabSolve");
+const createSection = $("createSection"), solveSection = $("solveSection");
+
+function setMode(mode) {
+  const creating = mode === "create";
+  createSection.classList.toggle("hidden", !creating);
+  solveSection.classList.toggle("hidden", creating);
+  tabCreate.classList.toggle("bg-indigo-600", creating);
+  tabCreate.classList.toggle("text-white", creating);
+  tabCreate.classList.toggle("text-slate-600", !creating);
+  tabSolve.classList.toggle("bg-indigo-600", !creating);
+  tabSolve.classList.toggle("text-white", !creating);
+  tabSolve.classList.toggle("text-slate-600", creating);
+}
+tabCreate.addEventListener("click", () => setMode("create"));
+tabSolve.addEventListener("click", () => setMode("solve"));
+setMode("create");
+
+// =====================================================================
+// CREATE MODE
+// =====================================================================
+let sourceImg = null;      // uploaded Image()
+let currentOrder = [];     // permutation: order[slot] = originalPieceIndex
+let currentGrid = 3;
+let scrambledCanvas = null;
+
+const previewCanvas = $("previewCanvas");
+const previewCtx = previewCanvas.getContext("2d");
+
+$("createFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    sourceImg = img;
+    $("shuffleBtn").disabled = false;
+    $("downloadBtn").disabled = false;
+    buildScrambledPreview();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+$("gridSizeSelect").addEventListener("change", () => {
+  if (sourceImg) buildScrambledPreview();
+});
+$("shuffleBtn").addEventListener("click", () => {
+  if (sourceImg) buildScrambledPreview();
+});
+
+function buildScrambledPreview() {
+  currentGrid = parseInt($("gridSizeSelect").value, 10);
+  const n = currentGrid * currentGrid;
+  const order = shuffleArray([...Array(n).keys()]);
+  currentOrder = order;
+
+  const SIZE = 600; // square working canvas so pieces are always square-cut
+  const cell = SIZE / currentGrid;
+
+  // draw the source image cropped/cover-fit into a square offscreen canvas
+  const squareCanvas = document.createElement("canvas");
+  squareCanvas.width = SIZE;
+  squareCanvas.height = SIZE;
+  const sctx = squareCanvas.getContext("2d");
+  const { sx, sy, sSize } = coverCrop(sourceImg.width, sourceImg.height);
+  sctx.drawImage(sourceImg, sx, sy, sSize, sSize, 0, 0, SIZE, SIZE);
+
+  // build scrambled canvas from the square source
+  previewCanvas.width = SIZE;
+  previewCanvas.height = SIZE;
+  for (let slot = 0; slot < n; slot++) {
+    const origIndex = order[slot];
+    const srow = Math.floor(origIndex / currentGrid), scol = origIndex % currentGrid;
+    const drow = Math.floor(slot / currentGrid), dcol = slot % currentGrid;
+    previewCtx.drawImage(
+      squareCanvas,
+      scol * cell, srow * cell, cell, cell,
+      dcol * cell, drow * cell, cell, cell
+    );
+  }
+  // faint grid lines so it visually reads as a puzzle
+  previewCtx.strokeStyle = "rgba(255,255,255,.5)";
+  previewCtx.lineWidth = 2;
+  for (let i = 1; i < currentGrid; i++) {
+    previewCtx.beginPath(); previewCtx.moveTo(i * cell, 0); previewCtx.lineTo(i * cell, SIZE); previewCtx.stroke();
+    previewCtx.beginPath(); previewCtx.moveTo(0, i * cell); previewCtx.lineTo(SIZE, i * cell); previewCtx.stroke();
+  }
+
+  scrambledCanvas = squareCanvas; // keep the clean (line-free) version for export pieces
+  $("createPlaceholder").classList.add("hidden");
+  previewCanvas.classList.remove("hidden");
+}
+
+function coverCrop(w, h) {
+  const sSize = Math.min(w, h);
+  return { sx: (w - sSize) / 2, sy: (h - sSize) / 2, sSize };
+}
+
+// ---------- DOWNLOAD: builds the final key-embedded PNG ----------
+$("downloadBtn").addEventListener("click", () => {
+  if (!sourceImg) return;
+  showRewardedAd(() => generateAndDownload());
+});
+
+async function generateAndDownload() {
+  const n = currentGrid * currentGrid;
+  const SIZE = 600;
+  const cell = SIZE / currentGrid;
+  const STEG_ROWS = 2; // extra pixel rows at bottom for Method A
+
+  // Final export canvas = scrambled image + steganography strip
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = SIZE;
+  exportCanvas.height = SIZE + STEG_ROWS;
+  const ectx = exportCanvas.getContext("2d");
+
+  for (let slot = 0; slot < n; slot++) {
+    const origIndex = currentOrder[slot];
+    const srow = Math.floor(origIndex / currentGrid), scol = origIndex % currentGrid;
+    const drow = Math.floor(slot / currentGrid), dcol = slot % currentGrid;
+    ectx.drawImage(
+      scrambledCanvas,
+      scol * cell, srow * cell, cell, cell,
+      dcol * cell, drow * cell, cell, cell
+    );
+  }
+
+  const keyObj = { g: currentGrid, order: currentOrder };
+  const keyJson = JSON.stringify(keyObj);
+
+  // ---- Method A: write key into the bottom pixel strip ----
+  writeStegoStrip(ectx, SIZE, STEG_ROWS, keyJson);
+
+  // ---- Export to PNG blob, then append Method B trailer bytes ----
+  exportCanvas.toBlob(async (blob) => {
+    const originalBytes = new Uint8Array(await blob.arrayBuffer());
+    const trailerText = KEY_START + keyJson + KEY_END;
+    const trailerBytes = new TextEncoder().encode(trailerText);
+    const finalBytes = new Uint8Array(originalBytes.length + trailerBytes.length);
+    finalBytes.set(originalBytes, 0);
+    finalBytes.set(trailerBytes, originalBytes.length);
+
+    const finalBlob = new Blob([finalBytes], { type: "image/png" });
+    const url = URL.createObjectURL(finalBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `puzzle-${currentGrid}x${currentGrid}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, "image/png");
+}
+
+// Encodes `text` into `rows` pixel rows at the bottom of the canvas.
+// Layout: pixel(0,0 of strip) = [lenHi, lenLo, 0] header.
+// Then each subsequent pixel encodes up to 3 chars (R,G,B = charCodes).
+function writeStegoStrip(ctx, width, rows, text) {
+  const bytes = Array.from(text).map((c) => c.charCodeAt(0));
+  const stripY = 0; // we draw relative to a temp image data covering the strip area
+  const imgData = ctx.createImageData(width, rows);
+  const d = imgData.data;
+
+  const len = bytes.length;
+  // header pixel (0,0): length encoded across R (hi byte) and G (lo byte)
+  d[0] = (len >> 8) & 0xff;
+  d[1] = len & 0xff;
+  d[2] = 0xff; // marker
+  d[3] = 255;
+
+  let bi = 0;
+  for (let px = 1; px < width * rows && bi < len; px++) {
+    const o = px * 4;
+    d[o]   = bytes[bi++] || 0;
+    d[o+1] = bytes[bi++] || 0;
+    d[o+2] = bytes[bi++] || 0;
+    d[o+3] = 255;
+  }
+  // fill remainder alpha so untouched pixels don't look broken
+  for (let px = 0; px < width * rows; px++) {
+    const o = px * 4;
+    if (d[o+3] === 0) { d[o]=0; d[o+1]=0; d[o+2]=0; d[o+3]=255; }
+  }
+  ctx.putImageData(imgData, 0, ctx.canvas.height - rows);
+}
+
+function readStegoStrip(ctx, width, rows, canvasHeight) {
+  const imgData = ctx.getImageData(0, canvasHeight - rows, width, rows);
+  const d = imgData.data;
+  const len = (d[0] << 8) | d[1];
+  if (!len || len > width * rows * 3) return null;
+  let chars = [];
+  let bi = 0;
+  for (let px = 1; px < width * rows && bi < len; px++) {
+    const o = px * 4;
+    for (const v of [d[o], d[o+1], d[o+2]]) {
+      if (bi < len) { chars.push(v); bi++; }
+    }
+  }
+  try {
+    const str = String.fromCharCode(...chars);
+    return JSON.parse(str);
+  } catch { return null; }
+}
+
+// =====================================================================
+// REWARDED VIDEO AD (simulated) — swap the internals for a real SDK
+// =====================================================================
+function showRewardedAd(onComplete) {
+  const modal = $("rewardedAdModal");
+  const countdownEl = $("adCountdown");
+  const ring = $("adRing");
+  const skipBtn = $("adSkipBtn");
+  let seconds = 5;
+  countdownEl.textContent = seconds;
+  ring.style.setProperty("--p", 0);
+  skipBtn.disabled = true;
+  skipBtn.textContent = "Please wait…";
+  modal.classList.remove("hidden");
+
+  const total = seconds;
+  const timer = setInterval(() => {
+    seconds--;
+    countdownEl.textContent = Math.max(seconds, 0);
+    ring.style.setProperty("--p", Math.round(((total - seconds) / total) * 100));
+    if (seconds <= 0) {
+      clearInterval(timer);
+      skipBtn.disabled = false;
+      skipBtn.textContent = "Continue to download";
+    }
+  }, 1000);
+
+  skipBtn.onclick = () => {
+    if (skipBtn.disabled) return;
+    modal.classList.add("hidden");
+    onComplete();
+  };
+}
+
+// =====================================================================
+// SOLVE MODE
+// =====================================================================
+let solveGrid = 3;
+let solveOrder = [];       // order[slot] = originalIndex (from embedded key)
+let solvePieces = [];      // dataURLs sliced from the uploaded scrambled image, indexed by ORIGINAL index
+let boardState = [];       // boardState[slot] = originalIndex currently placed there, or null
+
+$("solveFileInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $("solveStatus").textContent = "Reading file…";
+  $("solveBoardWrap").classList.add("hidden");
+
+  const buffer = await file.arrayBuffer();
+  let keyObj = tryReadAppendedKey(buffer);
+  let method = "B (file-appended key)";
+
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  await new Promise((res) => (img.onload = res));
+
+  if (!keyObj) {
+    // fall back to Method A: draw image, read bottom pixel strip
+    const tmp = document.createElement("canvas");
+    tmp.width = img.width; tmp.height = img.height;
+    const tctx = tmp.getContext("2d");
+    tctx.drawImage(img, 0, 0);
+    keyObj = readStegoStrip(tctx, img.width, 2, img.height) || readStegoStrip(tctx, img.width, 1, img.height);
+    method = "A (pixel steganography)";
+  }
+
+  if (!keyObj || !keyObj.order || !keyObj.g) {
+    $("solveStatus").innerHTML =
+      `<span class="text-red-600 font-medium">No puzzle key found.</span> This image may have been re-compressed by the app you received it from. Ask the sender to resend it as a <b>Document/File</b> instead of a Photo.`;
+    return;
+  }
+
+  $("solveStatus").innerHTML = `<span class="text-emerald-600 font-medium">Key found via Method ${method}.</span> Grid: ${keyObj.g}×${keyObj.g}. Drag pieces into place!`;
+  startSolving(img, keyObj);
+});
+
+function tryReadAppendedKey(arrayBuffer) {
+  try {
+    const bytes = new Uint8Array(arrayBuffer);
+    // Only decode the tail of the file for speed & to avoid huge string ops
+    const tailLen = Math.min(bytes.length, 20000);
+    const tail = bytes.slice(bytes.length - tailLen);
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(tail);
+    const startIdx = text.indexOf(KEY_START);
+    const endIdx = text.indexOf(KEY_END);
+    if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) return null;
+    const json = text.slice(startIdx + KEY_START.length, endIdx);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function startSolving(img, keyObj) {
+  solveGrid = keyObj.g;
+  solveOrder = keyObj.order;
+  const n = solveGrid * solveGrid;
+
+  // Slice the (square, possibly with steg strip below it — ignore extra rows)
+  const SIZE = Math.min(img.width, img.height); // square puzzle area
+  const cell = SIZE / solveGrid;
+  const squareCanvas = document.createElement("canvas");
+  squareCanvas.width = SIZE; squareCanvas.height = SIZE;
+  const sctx = squareCanvas.getContext("2d");
+  sctx.drawImage(img, 0, 0, SIZE, SIZE, 0, 0, SIZE, SIZE);
+
+  // For each scrambled slot, cut a piece image and remember its ORIGINAL index
+  solvePieces = new Array(n);
+  for (let slot = 0; slot < n; slot++) {
+    const origIndex = solveOrder[slot];
+    const drow = Math.floor(slot / solveGrid), dcol = slot % solveGrid;
+    const pieceCanvas = document.createElement("canvas");
+    pieceCanvas.width = cell; pieceCanvas.height = cell;
+    pieceCanvas.getContext("2d").drawImage(
+      squareCanvas, dcol * cell, drow * cell, cell, cell, 0, 0, cell, cell
+    );
+    solvePieces[origIndex] = pieceCanvas.toDataURL("image/png");
+  }
+
+  boardState = new Array(n).fill(null);
+  renderBoardAndTray();
+  $("solveBoardWrap").classList.remove("hidden");
+}
+
+function renderBoardAndTray() {
+  const n = solveGrid * solveGrid;
+  const boardGrid = $("boardGrid");
+  const trayGrid = $("trayGrid");
+  boardGrid.innerHTML = "";
+  trayGrid.innerHTML = "";
+
+  const boardPx = Math.min(480, window.innerWidth - 80);
+  const cellPx = Math.floor(boardPx / solveGrid);
+  boardGrid.style.gridTemplateColumns = `repeat(${solveGrid}, ${cellPx}px)`;
+  trayGrid.style.gridTemplateColumns = `repeat(3, minmax(0,1fr))`;
+
+  for (let slot = 0; slot < n; slot++) {
+    const el = document.createElement("div");
+    el.className = "board-slot";
+    el.style.width = cellPx + "px";
+    el.style.height = cellPx + "px";
+    el.dataset.slot = slot;
+    boardGrid.appendChild(el);
+  }
+
+  // shuffled tray order just for display variety
+  const trayOrder = shuffleArray([...Array(n).keys()]);
+  trayOrder.forEach((origIndex) => {
+    const el = document.createElement("div");
+    el.className = "tray-piece";
+    el.style.width = "100%";
+    el.style.aspectRatio = "1/1";
+    el.style.backgroundImage = `url(${solvePieces[origIndex]})`;
+    el.dataset.piece = origIndex;
+    trayGrid.appendChild(el);
+    attachDrag(el);
+  });
+}
+
+// =====================================================================
+// DRAG & DROP (pointer-events based — works for mouse + touch)
+// =====================================================================
+let dragEl = null, dragGhost = null, dragOriginParent = null, dragOriginNext = null;
+
+function attachDrag(el) {
+  el.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    dragEl = el;
+    dragOriginParent = el.parentElement;
+    dragOriginNext = el.nextSibling;
+
+    const rect = el.getBoundingClientRect();
+    dragGhost = el.cloneNode(true);
+    dragGhost.classList.add("dragging");
+    dragGhost.style.width = rect.width + "px";
+    dragGhost.style.height = rect.height + "px";
+    dragGhost.style.left = rect.left + "px";
+    dragGhost.style.top = rect.top + "px";
+    document.body.appendChild(dragGhost);
+    el.style.visibility = "hidden";
+
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    function move(ev) {
+      dragGhost.style.left = ev.clientX - offsetX + "px";
+      dragGhost.style.top = ev.clientY - offsetY + "px";
+      document.querySelectorAll(".slot-hover").forEach((s) => s.classList.remove("slot-hover"));
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      const slot = target && target.closest(".board-slot");
+      if (slot) slot.classList.add("slot-hover");
+    }
+    function up(ev) {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.querySelectorAll(".slot-hover").forEach((s) => s.classList.remove("slot-hover"));
+
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      const slot = target && target.closest(".board-slot");
+      const tray = target && target.closest("#trayGrid");
+
+      dragGhost.remove();
+      el.style.visibility = "visible";
+
+      if (slot) {
+        placePieceInSlot(el, slot);
+      } else if (tray) {
+        $("trayGrid").appendChild(el);
+      } else {
+        // dropped nowhere valid — snap back
+        if (dragOriginNext) dragOriginParent.insertBefore(el, dragOriginNext);
+        else dragOriginParent.appendChild(el);
+      }
+      dragEl = null;
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+}
+
+function placePieceInSlot(pieceEl, slotEl) {
+  // if slot already has a piece, swap it back to tray
+  const existing = slotEl.querySelector(".tray-piece");
+  if (existing) {
+    $("trayGrid").appendChild(existing);
+  }
+  slotEl.innerHTML = "";
+  slotEl.appendChild(pieceEl);
+  slotEl.classList.add("filled");
+
+  const slotIndex = parseInt(slotEl.dataset.slot, 10);
+  const pieceOriginalIndex = parseInt(pieceEl.dataset.piece, 10);
+  boardState[slotIndex] = pieceOriginalIndex;
+
+  // snap feedback: correct placement highlight
+  if (pieceOriginalIndex === slotIndex) {
+    slotEl.classList.add("correct");
+  } else {
+    slotEl.classList.remove("correct");
+  }
+
+  checkWin();
+}
+
+function checkWin() {
+  const n = solveGrid * solveGrid;
+  const filled = boardState.filter((v) => v !== null).length;
+  if (filled !== n) return;
+  const solved = boardState.every((v, i) => v === i);
+  if (solved) triggerWin();
+}
+
+function triggerWin() {
+  const banner = $("winBanner");
+  banner.classList.remove("hidden");
+  launchConfetti();
+  setTimeout(() => banner.classList.add("hidden"), 4000);
+}
+
+// =====================================================================
+// CONFETTI
+// =====================================================================
+function launchConfetti() {
+  const canvas = $("confettiCanvas");
+  canvas.classList.remove("hidden");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4"];
+  const pieces = Array.from({ length: 140 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * canvas.height * 0.5,
+    r: 4 + Math.random() * 5,
+    c: colors[Math.floor(Math.random() * colors.length)],
+    vy: 2 + Math.random() * 3,
+    vx: -2 + Math.random() * 4,
+    rot: Math.random() * Math.PI,
+    vrot: -0.2 + Math.random() * 0.4,
+  }));
+  let frame = 0;
+  function tick() {
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach((p) => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*1.6);
+      ctx.restore();
+    });
+    if (frame < 160) requestAnimationFrame(tick);
+    else canvas.classList.add("hidden");
+  }
+  tick();
+}
+</script>
+</body>
+</html>
