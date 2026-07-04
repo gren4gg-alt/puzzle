@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Photo Resizer — crop to exact cm size for government forms</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google AdSense — replace with your real publisher id before going live -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --ink:#1b1230;
+    --paper:#faf7f2;
+    --accent:#6366f1;
+    --accent-soft:#eef0fe;
+    --line: rgba(27,18,48,.12);
+  }
+  body{ font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif; background:var(--paper); color:var(--ink); }
+  .font-display{ font-family: Georgia, 'Times New Roman', serif; }
+  #cropCanvas{ touch-action: none; cursor: grab; }
+  #cropCanvas:active{ cursor: grabbing; }
+  input[type=range]{ accent-color: var(--accent); }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ======================= TOP AD BANNER ======================= -->
+<div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="7777777777"></ins>
+</div>
+
+<!-- ======================= HEADER ======================= -->
+<header class="w-full border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white grid place-items-center font-display font-bold">R</div>
+      <div>
+        <h1 class="font-display text-lg leading-tight font-bold">Exam Photo Resizer</h1>
+        <p class="text-[11px] text-slate-500 -mt-0.5">Crop to the exact cm size &amp; file size a form asks for.</p>
+      </div>
+    </div>
+    <a href="index.html"
+      class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium shadow-sm">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11l9-8 9 8M5 10v10h14V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All apps
+    </a>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1">
+  <div class="grid md:grid-cols-2 gap-6">
+
+    <!-- ======================= CONTROLS ======================= -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1">1. What are you uploading?</label>
+        <select id="presetSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="photo">Passport-style photo — 3.5 × 4.5 cm (most common: SSC, Railway, IBPS, UPSC)</option>
+          <option value="pan">PAN card photo — 2.5 × 3.5 cm</option>
+          <option value="signature">Signature — 3.5 × 1.5 cm</option>
+          <option value="custom">Custom size…</option>
+        </select>
+      </div>
+
+      <div id="customFields" class="hidden grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold block mb-1">Width (cm)</label>
+          <input id="customW" type="number" step="0.1" min="0.5" value="3.5" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold block mb-1">Height (cm)</label>
+          <input id="customH" type="number" step="0.1" min="0.5" value="4.5" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold block mb-1">DPI (most forms want 200)</label>
+          <input id="dpiInput" type="number" step="1" min="72" value="200" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold block mb-1">Max file size (KB)</label>
+          <input id="maxKbInput" type="number" step="1" min="5" value="50" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
+        </div>
+      </div>
+
+      <div id="dimsInfo" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg p-3 leading-relaxed"></div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1">2. Upload the photo</label>
+        <input id="fileInput" type="file" accept="image/*"
+          class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
+      </div>
+
+      <div id="zoomWrap" class="hidden">
+        <label class="text-sm font-semibold block mb-1">3. Drag to reposition, zoom to fit</label>
+        <input id="zoomSlider" type="range" min="100" max="300" value="100" class="w-full"/>
+      </div>
+
+      <button id="generateBtn" disabled
+        class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-indigo-700">
+        ✂️ Crop, resize &amp; download
+      </button>
+
+      <div id="resultStats" class="hidden text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3"></div>
+    </div>
+
+    <!-- ======================= CROP PREVIEW ======================= -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center min-h-[380px] gap-3">
+      <p id="cropPlaceholder" class="text-slate-400 text-sm text-center">Upload a photo to position it<br/>inside the required frame.</p>
+      <canvas id="cropCanvas" class="hidden rounded-lg border-2 border-dashed border-indigo-300"></canvas>
+      <p id="cropCaption" class="hidden text-xs text-slate-400 text-center">This frame shows exactly what will be kept — drag the photo underneath it.</p>
+    </div>
+  </div>
+</main>
+
+<div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="8888888888"></ins>
+</div>
+
+<footer class="text-center text-xs text-slate-400 py-4">
+  100% client-side. Your photo never leaves your device.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const PRESETS = {
+  photo:     { w: 3.5, h: 4.5, kb: 50 },
+  pan:       { w: 2.5, h: 3.5, kb: 20 },
+  signature: { w: 3.5, h: 1.5, kb: 20 },
+  custom:    { w: 3.5, h: 4.5, kb: 50 },
+};
+
+// =====================================================================
+// PRESET / DIMENSION HANDLING
+// =====================================================================
+function getCmDims() {
+  const preset = $("presetSelect").value;
+  if (preset === "custom") {
+    return {
+      w: parseFloat($("customW").value) || 3.5,
+      h: parseFloat($("customH").value) || 4.5,
+    };
+  }
+  return { w: PRESETS[preset].w, h: PRESETS[preset].h };
+}
+
+function updateDimsInfo() {
+  const { w, h } = getCmDims();
+  const dpi = parseInt($("dpiInput").value, 10) || 200;
+  const pxW = Math.round((w / 2.54) * dpi);
+  const pxH = Math.round((h / 2.54) * dpi);
+  $("dimsInfo").innerHTML =
+    `Target: <b>${w} cm × ${h} cm</b> (ratio ${w}:${h}) at ${dpi} DPI &nbsp;→&nbsp; ` +
+    `<b>${pxW} × ${pxH} px</b>`;
+  return { w, h, dpi, pxW, pxH };
+}
+
+$("presetSelect").addEventListener("change", () => {
+  const preset = $("presetSelect").value;
+  $("customFields").classList.toggle("hidden", preset !== "custom");
+  $("maxKbInput").value = PRESETS[preset].kb;
+  updateDimsInfo();
+  if (sourceImage) resetCropFrame();
+});
+$("customW").addEventListener("input", () => { updateDimsInfo(); if (sourceImage) resetCropFrame(); });
+$("customH").addEventListener("input", () => { updateDimsInfo(); if (sourceImage) resetCropFrame(); });
+$("dpiInput").addEventListener("input", updateDimsInfo);
+updateDimsInfo();
+
+/* =====================================================================
+   CROP FRAME — a fixed on-screen rectangle at the target aspect ratio.
+   The uploaded photo is drawn behind it and can be dragged/zoomed; the
+   canvas itself clips to the frame, so what you see IS what gets kept.
+   ===================================================================== */
+let sourceImage = null;
+let displayScale = 1;      // current zoom (>= cover-fit baseline)
+let coverScale = 1;        // baseline scale so the image fully covers the frame
+let offsetX = 0, offsetY = 0; // top-left of the image, in canvas px
+let dragging = false, dragStartX = 0, dragStartY = 0, startOffX = 0, startOffY = 0;
+
+const canvas = $("cropCanvas");
+const ctx = canvas.getContext("2d");
+
+$("fileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    sourceImage = img;
+    $("cropPlaceholder").classList.add("hidden");
+    canvas.classList.remove("hidden");
+    $("cropCaption").classList.remove("hidden");
+    $("zoomWrap").classList.remove("hidden");
+    $("generateBtn").disabled = false;
+    resetCropFrame();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+function resetCropFrame() {
+  const { w, h } = getCmDims();
+  const ratio = w / h;
+  const MAX_W = 320, MAX_H = 420;
+  let frameW, frameH;
+  if (ratio >= MAX_W / MAX_H) { frameW = MAX_W; frameH = MAX_W / ratio; }
+  else { frameH = MAX_H; frameW = MAX_H * ratio; }
+  canvas.width = Math.round(frameW);
+  canvas.height = Math.round(frameH);
+
+  coverScale = Math.max(canvas.width / sourceImage.width, canvas.height / sourceImage.height);
+  $("zoomSlider").value = 100;
+  displayScale = coverScale;
+  centerImage();
+  draw();
+}
+
+function centerImage() {
+  const dispW = sourceImage.width * displayScale;
+  const dispH = sourceImage.height * displayScale;
+  offsetX = (canvas.width - dispW) / 2;
+  offsetY = (canvas.height - dispH) / 2;
+}
+
+function clampOffsets() {
+  const dispW = sourceImage.width * displayScale;
+  const dispH = sourceImage.height * displayScale;
+  offsetX = Math.min(0, Math.max(canvas.width - dispW, offsetX));
+  offsetY = Math.min(0, Math.max(canvas.height - dispH, offsetY));
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const dispW = sourceImage.width * displayScale;
+  const dispH = sourceImage.height * displayScale;
+  ctx.drawImage(sourceImage, offsetX, offsetY, dispW, dispH);
+}
+
+$("zoomSlider").addEventListener("input", () => {
+  if (!sourceImage) return;
+  const zoomPct = parseInt($("zoomSlider").value, 10);
+  displayScale = coverScale * (zoomPct / 100);
+  centerImage();
+  draw();
+});
+
+// ---- drag to reposition (mouse + touch via Pointer Events) ----
+canvas.addEventListener("pointerdown", (e) => {
+  if (!sourceImage) return;
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  startOffX = offsetX; startOffY = offsetY;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  offsetX = startOffX + (e.clientX - dragStartX);
+  offsetY = startOffY + (e.clientY - dragStartY);
+  clampOffsets();
+  draw();
+});
+["pointerup", "pointercancel", "pointerleave"].forEach((evt) => {
+  canvas.addEventListener(evt, () => { dragging = false; });
+});
+
+/* =====================================================================
+   GENERATE: redraw the exact same crop at the true target pixel size
+   (derived from cm + DPI), then iteratively reduce JPEG quality until
+   the file fits under the requested max KB.
+   ===================================================================== */
+$("generateBtn").addEventListener("click", () => {
+  if (!sourceImage) return;
+
+  const { pxW, pxH } = updateDimsInfo();
+  const maxKb = parseInt($("maxKbInput").value, 10) || 50;
+
+  // Map the on-screen crop (offsetX/Y, displayScale, canvas size) to the
+  // full-resolution export canvas at the same relative position/zoom.
+  const factor = pxW / canvas.width; // canvas.width/height share the same aspect as pxW/pxH
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = pxW;
+  exportCanvas.height = pxH;
+  const ectx = exportCanvas.getContext("2d");
+  const dispW = sourceImage.width * displayScale * factor;
+  const dispH = sourceImage.height * displayScale * factor;
+  ectx.drawImage(sourceImage, offsetX * factor, offsetY * factor, dispW, dispH);
+
+  compressToTargetSize(exportCanvas, maxKb, (blob, quality) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `exam-photo-${pxW}x${pxH}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+    $("resultStats").classList.remove("hidden");
+    const under = blob.size <= maxKb * 1024;
+    $("resultStats").className = "text-sm rounded-lg p-3 border " +
+      (under ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+             : "bg-amber-50 border-amber-200 text-amber-800");
+    $("resultStats").innerHTML =
+      `Output: <b>${pxW}×${pxH}px</b>, <b>${(blob.size / 1024).toFixed(1)} KB</b> ` +
+      `(quality ${Math.round(quality * 100)}%)` +
+      (under ? " — within your target." :
+        " — couldn't get under the target without becoming too blurry; consider a smaller max size or a simpler background.");
+  });
+});
+
+// Binary-searches JPEG quality so the exported blob lands at/under maxKb.
+function compressToTargetSize(sourceCanvas, maxKb, done) {
+  const maxBytes = maxKb * 1024;
+  let lo = 0.1, hi = 0.95, bestBlob = null, bestQ = hi;
+  const MAX_TRIES = 7;
+  let tries = 0;
+
+  function tryQuality(q) {
+    sourceCanvas.toBlob((blob) => {
+      tries++;
+      if (blob.size <= maxBytes) {
+        bestBlob = blob; bestQ = q;
+        lo = q; // room to try higher quality while still under budget
+      } else {
+        hi = q; // too big, go lower
+      }
+      if (tries >= MAX_TRIES) {
+        if (!bestBlob) {
+          // Even the lowest quality tried was over budget — ship it anyway
+          // rather than fail silently; the UI flags this to the user.
+          sourceCanvas.toBlob((finalBlob) => done(finalBlob, lo), "image/jpeg", lo);
+        } else {
+          done(bestBlob, bestQ);
+        }
+        return;
+      }
+      tryQuality((lo + hi) / 2);
+    }, "image/jpeg", q);
+  }
+  tryQuality(hi);
+}
+</script>
+</body>
+</html>
