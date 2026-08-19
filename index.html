@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Hub — Small Web Toys</title>
+
+<!-- Google AdSense — replace with your real publisher id before going live -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:   #f2ede2;
+    --panel:   #fffdf8;
+    --ink:     #24211b;
+    --sub:     #6b6455;
+    --brass:   #b8863c;
+    --brass-deep: #8f6526;
+    --grid:    rgba(36,33,27,.08);
+    --line:    rgba(36,33,27,.16);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-font-smoothing:antialiased; }
+
+  body{
+    margin:0;
+    font-family:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--paper);
+    background-size: 28px 28px, 28px 28px, auto;
+    color: var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .mono{ font-family:'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ---------- ad slots ---------- */
+  .ad-row{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    padding: 10px 0;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+  .ad-row.bottom{ border-bottom:none; border-top:1px solid var(--line); margin-top:auto; }
+
+  /* ---------- header ---------- */
+  header{
+    max-width: 960px;
+    margin: 0 auto;
+    width:100%;
+    padding: 64px 24px 40px;
+  }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color: var(--brass-deep);
+    background: rgba(184,134,60,.12);
+    border:1px solid rgba(184,134,60,.35);
+    padding:6px 12px;
+    border-radius:3px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px; height:6px;
+    background: var(--brass);
+    border-radius:50%;
+    box-shadow: 0 0 0 3px rgba(184,134,60,.18);
+  }
+
+  h1{
+    font-size: clamp(2.3rem, 5vw, 3.4rem);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 22px 0 16px;
+    max-width: 14ch;
+  }
+
+  header p{
+    color: var(--sub);
+    font-size: 1.05rem;
+    max-width: 46ch;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .count-tag{
+    margin-top: 28px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .count-tag .rule{
+    height:1px;
+    flex:1;
+    background: var(--line);
+  }
+
+  /* ---------- grid ---------- */
+  main{
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px 72px;
+    flex: 1;
+  }
+
+  #appGrid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .app-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 22px 20px 20px;
+    text-decoration:none;
+    color: var(--ink);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .app-card::before{
+    /* punch-card corner notch, echoes the graph paper / index-card idea */
+    content:"";
+    position:absolute;
+    top:0; left:22px;
+    width: 14px; height: 14px;
+    background: var(--paper);
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    border-radius: 0 0 3px 0;
+  }
+
+  .app-card:hover{
+    transform: translateY(-4px);
+    border-color: var(--brass);
+    box-shadow: 6px 8px 0 rgba(36,33,27,.08);
+  }
+
+  .card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+  }
+
+  .card-emoji{
+    font-size: 26px;
+    line-height:1;
+  }
+
+  .card-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color: var(--brass-deep);
+    border: 1px solid rgba(184,134,60,.4);
+    background: rgba(184,134,60,.10);
+    padding: 4px 8px;
+    border-radius: 3px;
+    white-space:nowrap;
+  }
+
+  .card-name{
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .card-desc{
+    font-size: 0.9rem;
+    color: var(--sub);
+    line-height: 1.55;
+    flex: 1;
+    margin: 0;
+  }
+
+  .card-cta{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .card-cta .arrow{
+    transition: transform .18s ease;
+  }
+  .app-card:hover .card-cta .arrow{ transform: translateX(4px); }
+  .app-card:hover .card-cta{ color: var(--brass-deep); }
+
+  .empty-state{
+    grid-column: 1 / -1;
+    text-align:center;
+    padding: 64px 20px;
+    color: var(--sub);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+  }
+
+  footer{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--sub);
+    padding: 20px 20px 28px;
+  }
+  footer code{
+    background: rgba(36,33,27,.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .app-card, .app-card .arrow{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= TOP AD BANNER ======================= -->
+<div class="ad-row">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="3333333333"></ins>
+</div>
+
+<!-- ======================= HERO ======================= -->
+<header>
+  <span class="eyebrow">no accounts &middot; no servers &middot; runs in your browser</span>
+  <h1>Small web toys, made to be shared.</h1>
+  <p>Each app below is a single plain HTML/CSS/JS file. Pick one to get started — nothing to install, nothing to sign up for.</p>
+  <div class="count-tag">
+    <span id="appCount">0 apps</span>
+    <span class="rule"></span>
+    <span>updated by hand</span>
+  </div>
+</header>
+
+<!-- ======================= APP GRID ======================= -->
+<main>
+  <div id="appGrid"></div>
+</main>
+
+<!-- ======================= BOTTOM AD BANNER ======================= -->
+<div class="ad-row bottom">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:728px;height:90px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="4444444444"></ins>
+</div>
+
+<footer>
+  Add new apps by editing the <code>APPS</code> list in this page's source.
+</footer>
+
+<script>
+  /* =====================================================================
+     APP REGISTRY
+     Add a new entry here whenever you ship another single-file app.
+     Each app lives in its own HTML file alongside this one.
+     ===================================================================== */
+  const APPS = [
+    {
+      name: "Photo Puzzle Exchange",
+      url: "puzzle-exchange.html",
+      tag: "Game",
+      emoji: "🧩",
+      description: "Scramble a photo into a puzzle, share the file, and let someone else solve it — the answer key travels inside the image itself."
+    },
+    {
+      name: "Media Compressor",
+      url: "media-compressor.html",
+      tag: "Tool",
+      emoji: "🗜️",
+      description: "Shrink photos, audio, and video right in your browser — nothing is ever uploaded anywhere."
+    },
+    {
+      name: "Exam Photo Resizer",
+      url: "exam-photo-resizer.html",
+      tag: "Tool",
+      emoji: "📐",
+      description: "Crop a photo to the exact cm size and file-size limit a government exam form asks for."
+    },
+    {
+      name: "Game Hub",
+      url: "games/gameindex.html",
+      tag: "Games",
+      emoji: "🎮",
+      description: "Browse every small browser game in one place — arcade, word games, and whatever comes next."
+    },
+    // Add more apps here as you build them, e.g.:
+    // {
+    //   name: "Your Next App",
+    //   url: "your-next-app.html",
+    //   tag: "Tool",
+    //   emoji: "✨",
+    //   description: "A short one-line description of what it does."
+    // },
+  ];
+
+  const grid = document.getElementById("appGrid");
+  const countEl = document.getElementById("appCount");
+  countEl.textContent = APPS.length + (APPS.length === 1 ? " app" : " apps");
+
+  APPS.forEach((app) => {
+    const card = document.createElement("a");
+    card.href = app.url;
+    card.className = "app-card";
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-emoji">${app.emoji}</span>
+        <span class="card-tag">${app.tag}</span>
+      </div>
+      <h2 class="card-name">${app.name}</h2>
+      <p class="card-desc">${app.description}</p>
+      <span class="card-cta">Open app <span class="arrow">→</span></span>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (APPS.length === 0) {
+    grid.innerHTML = `<div class="empty-state">No apps published yet — check back soon.</div>`;
+  }
+</script>
+</body>
+</html>

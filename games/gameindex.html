@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hub — Small Web Toys</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:   #f2ede2;
+    --panel:   #fffdf8;
+    --ink:     #24211b;
+    --sub:     #6b6455;
+    --brass:   #b8863c;
+    --brass-deep: #8f6526;
+    --grid:    rgba(36,33,27,.08);
+    --line:    rgba(36,33,27,.16);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-font-smoothing:antialiased; }
+
+  body{
+    margin:0;
+    font-family:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--paper);
+    background-size: 28px 28px, 28px 28px, auto;
+    color: var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .mono{ font-family:'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ---------- header / nav ---------- */
+  header{
+    max-width: 960px;
+    margin: 0 auto;
+    width:100%;
+    padding: 56px 24px 36px;
+  }
+
+  .back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--sub);
+    text-decoration:none;
+    margin-bottom: 22px;
+  }
+  .back-link:hover{ color: var(--brass-deep); }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color: var(--brass-deep);
+    background: rgba(184,134,60,.12);
+    border:1px solid rgba(184,134,60,.35);
+    padding:6px 12px;
+    border-radius:3px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px; height:6px;
+    background: var(--brass);
+    border-radius:50%;
+    box-shadow: 0 0 0 3px rgba(184,134,60,.18);
+  }
+
+  h1{
+    font-size: clamp(2.3rem, 5vw, 3.4rem);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 22px 0 16px;
+    max-width: 14ch;
+  }
+
+  header p.sub{
+    color: var(--sub);
+    font-size: 1.05rem;
+    max-width: 46ch;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .count-tag{
+    margin-top: 28px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .count-tag .rule{
+    height:1px;
+    flex:1;
+    background: var(--line);
+  }
+
+  /* ---------- grid ---------- */
+  main{
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px 72px;
+    flex: 1;
+  }
+
+  #gameGrid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .app-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 22px 20px 20px;
+    text-decoration:none;
+    color: var(--ink);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .app-card::before{
+    content:"";
+    position:absolute;
+    top:0; left:22px;
+    width: 14px; height: 14px;
+    background: var(--paper);
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    border-radius: 0 0 3px 0;
+  }
+
+  .app-card:hover{
+    transform: translateY(-4px);
+    border-color: var(--brass);
+    box-shadow: 6px 8px 0 rgba(36,33,27,.08);
+  }
+
+  .card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+  }
+
+  .card-emoji{
+    font-size: 26px;
+    line-height:1;
+  }
+
+  .card-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color: var(--brass-deep);
+    border: 1px solid rgba(184,134,60,.4);
+    background: rgba(184,134,60,.10);
+    padding: 4px 8px;
+    border-radius: 3px;
+    white-space:nowrap;
+  }
+
+  .card-name{
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .card-desc{
+    font-size: 0.9rem;
+    color: var(--sub);
+    line-height: 1.55;
+    flex: 1;
+    margin: 0;
+  }
+
+  .card-cta{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .card-cta .arrow{ transition: transform .18s ease; }
+  .app-card:hover .card-cta .arrow{ transform: translateX(4px); }
+  .app-card:hover .card-cta{ color: var(--brass-deep); }
+
+  .empty-state{
+    grid-column: 1 / -1;
+    text-align:center;
+    padding: 64px 20px;
+    color: var(--sub);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+  }
+
+  footer{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--sub);
+    padding: 20px 20px 28px;
+  }
+  footer code{
+    background: rgba(36,33,27,.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .app-card, .app-card .arrow{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= HEADER ======================= -->
+<header>
+  <a href="../index.html" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    All apps
+  </a>
+  <span class="eyebrow">no accounts &middot; no servers &middot; runs in your browser</span>
+  <h1>Games worth a coffee break.</h1>
+  <p class="sub">Each game below is a single plain HTML/CSS/JS file living in this <code class="mono">games</code> folder. Pick one and start playing — nothing to install, nothing to sign up for.</p>
+  <div class="count-tag">
+    <span id="gameCount">0 games</span>
+    <span class="rule"></span>
+    <span>updated by hand</span>
+  </div>
+</header>
+
+<!-- ======================= GAME GRID ======================= -->
+<main>
+  <div id="gameGrid"></div>
+</main>
+
+<footer>
+  Add new games by editing the <code>GAMES</code> list in this page's source.
+</footer>
+
+<script>
+  /* =====================================================================
+     GAME REGISTRY
+     Add a new entry here whenever you ship another single-file game.
+     Each game lives in its own HTML file alongside this one, inside /games.
+     ===================================================================== */
+  const GAMES = [
+    {
+      name: "Ball Runner",
+      url: "ball_runner.html",
+      tag: "Arcade",
+      emoji: "🟠",
+      description: "Dodge, dash, and keep the ball alive as the course speeds up around you."
+    },
+    {
+      name: "Word Fall",
+      url: "word_fall_game.html",
+      tag: "Word Game",
+      emoji: "🔤",
+      description: "Type the falling words before they hit the ground — how long can you keep up?"
+    },
+    // Add more games here as you build them, e.g.:
+    // {
+    //   name: "Your Next Game",
+    //   url: "your-next-game.html",
+    //   tag: "Puzzle",
+    //   emoji: "🎮",
+    //   description: "A short one-line description of what it's about.",
+    // },
+  ];
+
+  const grid = document.getElementById("gameGrid");
+  const countEl = document.getElementById("gameCount");
+  countEl.textContent = GAMES.length + (GAMES.length === 1 ? " game" : " games");
+
+  GAMES.forEach((game) => {
+    const card = document.createElement("a");
+    card.href = game.url;
+    card.className = "app-card";
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-emoji">${game.emoji}</span>
+        <span class="card-tag">${game.tag}</span>
+      </div>
+      <h2 class="card-name">${game.name}</h2>
+      <p class="card-desc">${game.description}</p>
+      <span class="card-cta">Play <span class="arrow">→</span></span>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (GAMES.length === 0) {
+    grid.innerHTML = `<div class="empty-state">No games published yet — check back soon.</div>`;
+  }
+</script>
+</body>
+</html>
