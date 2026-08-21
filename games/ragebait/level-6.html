@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1035">
+<title>DRIFT HOP · LV.6</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="title">DRIFT HOP · LV.6</div>
+    <div class="right">
+      <div class="stat">FALLS <b id="deathCount">0</b></div>
+      <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+      <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
+      <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
+      <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="game"></canvas>
+
+    <div id="touch">
+      <div class="pad moves">
+        <div class="tbtn" id="btnLeft">◀</div>
+        <div class="tbtn" id="btnRight">▶</div>
+      </div>
+      <div class="pad"><div class="tbtn" id="btnJump">HOP</div></div>
+    </div>
+
+    <div class="screen hidden" id="pauseScreen">
+      <h1 class="paused">PAUSED</h1>
+      <div class="btn-row"><button class="big-btn" id="resumeBtn">▶ Resume</button></div>
+      <div class="btn-row">
+        <button class="ghost-btn" id="retryBtn">🔄 Retry</button>
+        <button class="ghost-btn" id="homeBtnPause">🏠 Home</button>
+      </div>
+    </div>
+
+    <div class="screen" id="overlay">
+      <h1 id="overlayTitle">LEVEL 6</h1>
+      <p id="overlayText">
+        Ten orbiting platforms sweep their circles over a mountain valley now, instead of open space. Solid all the way round — ride them, watch the loops, and pick your moment.
+      </p>
+      <p id="controlHint">Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp; Pause: <b>P</b></p>
+      <div class="btn-row" id="winRow" style="display:none;">
+        <button class="big-btn" id="nextBtn">Next Level ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">ten loops over the valley — ride them, watch the timing, then jump</div>
+</div>
+
+
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script>
+// ==== LEVEL 6 — orbit obstacles + mountain valley scenery ====
+const LEVEL_ID='level-6';
+const LEVEL_TITLE='DRIFT HOP';
+function winFlavorText(deaths){
+  return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles each orbit's size, speed, and direction, over the ridgeline.`;
+}
+
+/* ---- Mountain valley scenery: parallax ridges, wind, floating leaves ----
+   Purely cosmetic — no effect on platforms, physics, or collision. */
+window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,220,170' };
+window.SHOW_NEBULA = true;
+window.SHOW_STARS = false;
+window.SHOW_MOTES = false;
+window.MUSIC_THEME = 'mountain';
+window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+
+let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+
+function ridgeLine(baseY, amp, seedCount, spanW){
+  // procedurally generated jagged mountain silhouette, tileable across spanW
+  const pts=[];
+  const n=seedCount;
+  for(let i=0;i<=n;i++){
+    const x=(i/n)*spanW;
+    const y=baseY - Math.abs(Math.sin(i*1.7)+Math.sin(i*0.6+1.3)*0.6)*amp*rand(0.65,1);
+    pts.push({x,y});
+  }
+  return pts;
+}
+
+function buildExtraSky(){
+  const spanW=2400;
+  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
+  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+
+  leaves=[];
+  for(let i=0;i<22;i++)leaves.push({
+    x:rand(0,2200), y:rand(-40,H), size:rand(5,10)*scale,
+    depth:rand(0.55,0.85), sway:rand(0,Math.PI*2), swaySpeed:rand(0.0009,0.0018),
+    fall:rand(0.25,0.55), rot:rand(0,Math.PI*2), rotSpeed:rand(-0.02,0.02),
+    hue:choice(['#e8a23c','#d9622b','#c9432f','#e0b84a','#8fae4a']),
+  });
+
+  windGusts=[];
+  nextGustAt=performance.now()+rand(1500,4000);
+}
+
+function drawRidge(r, camX, W, H){
+  const spanW=r.spanW;
+  const offset=((camX*r.depth)%spanW+spanW)%spanW;
+  ctx.fillStyle=r.color;
+  for(let rep=-1;rep<=1;rep++){
+    ctx.beginPath();
+    const baseX=rep*spanW-offset;
+    ctx.moveTo(baseX, H);
+    for(const p of r.pts) ctx.lineTo(baseX+p.x, p.y);
+    ctx.lineTo(baseX+spanW, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawExtraScenery(t){
+  drawRidge(ridgesFar, camX, W, H);
+  drawRidge(ridgesNear, camX, W, H);
+
+  // wind gusts: soft translucent streaks sweeping left to right
+  if(t>=nextGustAt){
+    windGusts.push({x:-80,y:rand(H*0.15,H*0.7),len:rand(90,170),speed:rand(4.5,7),life:1});
+    nextGustAt=t+rand(1800,4200);
+    if(typeof Snd!=='undefined') Snd.windGust();
+  }
+  for(let i=windGusts.length-1;i>=0;i--){
+    const g=windGusts[i];
+    g.x+=g.speed; g.life-=0.010;
+    if(g.x>W+100||g.life<=0){ windGusts.splice(i,1); continue; }
+    ctx.save();
+    ctx.globalAlpha=0.16*g.life;
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=2;
+    ctx.lineCap='round';
+    for(let k=0;k<3;k++){
+      ctx.beginPath();
+      ctx.moveTo(g.x-k*14, g.y+k*6);
+      ctx.lineTo(g.x-k*14+g.len, g.y+k*6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // floating leaves drifting down with a gentle sideways sway
+  for(const lf of leaves){
+    lf.y+=lf.fall; lf.rot+=lf.rotSpeed;
+    if(lf.y>H+20){ lf.y=-20; lf.x=rand(0,2200); }
+    const swayX = Math.sin(t*lf.swaySpeed+lf.sway)*18;
+    const lx=((lf.x-camX*lf.depth)%2200+2200)%2200 + swayX;
+    ctx.save();
+    ctx.translate(lx, lf.y);
+    ctx.rotate(lf.rot);
+    ctx.fillStyle=lf.hue;
+    ctx.beginPath();
+    ctx.ellipse(0,0,lf.size,lf.size*0.55,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function buildLevel(){
+  const reach=SAFE_REACH*scale,rise=SAFE_RISE*scale;
+  platforms=[];
+  const groundY=PLAY_H-40;
+
+  startLedge={x:24,y:groundY,w:140*scale,h:16*scale,baseW:140*scale,
+    type:'home',hue:0};
+  startLedge.slotCX=startLedge.x+startLedge.w/2;
+  platforms.push(startLedge);
+
+  let prevCX=startLedge.slotCX,prevY=groundY,prevHalfW=startLedge.w/2,prevRx=0;
+
+  // Orbiters sweep full circles around fixed anchors and are ALWAYS solid —
+  // you can ride one around its whole loop and wait as long as you need.
+  // Anchors are spaced so that when platform i is at its rightmost point and
+  // platform i+1 is at its leftmost, the gap is comfortably jumpable. Since
+  // every orbit runs at its own speed that alignment keeps coming back
+  // around, so the challenge is reading two loops and picking the moment —
+  // not surviving an impossible timing window.
+  const travelTop=PLAY_H*0.22, travelBottom=PLAY_H-80;
+
+  for(let i=0;i<10;i++){
+    const size=rand(48,58)*scale;
+    const rx=rand(40,68)*scale;
+    const ry=Math.min(rise*0.35, rand(22,30)*scale); // ry_i+ry_(i+1)+jitter stays under SAFE_RISE
+
+    const anchorY=Math.max(travelTop+ry, Math.min(travelBottom-ry, prevY+rand(-18,18)*scale));
+    // closest-approach edge gap between platform i and i+1 is exactly reach*0.55
+    const anchorX=prevCX+prevRx+rx+size/2+reach*0.55;
+
+    // neighbours always counter-rotate, so their relative phase keeps
+    // advancing and a close-approach window is guaranteed every cycle
+    const dir=(i%2===0)?1:-1;
+    platforms.push({
+      type:'orbit',
+      anchorX,anchorY,rx,ry,size,w:size,h:size,
+      angSpeed:dir*rand(0.0007,0.0013),
+      phase:rand(0,Math.PI*2),
+      landable:true,            // always solid — ride it as long as you like
+      x:anchorX-rx-size/2,y:anchorY-size/2,
+      hue:i,
+    });
+    prevCX=anchorX; prevRx=rx; prevHalfW=size/2; prevY=anchorY;
+  }
+
+  // ---- verify & repair -------------------------------------------------
+  // Sample each consecutive pair over time; if a link never presents a
+  // jumpable moment (possible when two orbits happen to sit awkwardly),
+  // pull the later anchor in and flatten its height until it does. This
+  // makes every generated level provably completable.
+  const AIR=2*Math.abs(JUMP_V)/GRAVITY*16.7;
+  function orbAt(p,t){
+    const a=t*p.angSpeed+p.phase;
+    return {x:p.anchorX+p.rx*Math.cos(a)-p.size/2, y:p.anchorY+p.ry*Math.sin(a)-p.size/2};
+  }
+  function linkOK(a,b){
+    for(let t=0;t<30000;t+=40){
+      const A=a===startLedge?{x:a.x,y:a.y}:orbAt(a,t);
+      const aw=a===startLedge?a.w:a.size;
+      for(let f=280;f<=AIR;f+=40){
+        const B=orbAt(b,t+f);
+        if(B.x-(A.x+aw)<=reach && A.y-B.y<=rise) return true;
+      }
+    }
+    return false;
+  }
+  for(let i=1;i<platforms.length;i++){
+    let guard=0;
+    while(!linkOK(platforms[i-1],platforms[i]) && guard++<30){
+      platforms[i].anchorX-=10*scale;
+      platforms[i].rx=Math.max(24*scale,platforms[i].rx-3*scale);
+      const py=(platforms[i-1]===startLedge)?platforms[i-1].y:platforms[i-1].anchorY;
+      platforms[i].anchorY+=(py-platforms[i].anchorY)*0.34;
+      platforms[i].ry=Math.max(14*scale,platforms[i].ry-2*scale);
+    }
+    // keep everything downstream consistent with any shift we just made
+  }
+
+  const last=platforms[platforms.length-1];
+  portal={x:last.anchorX+last.rx+72*scale,y:last.anchorY,r:32*scale};
+  worldWidth=portal.x+150;
+
+  const pw=28*scale,ph=30*scale;
+  player={x:startLedge.x+startLedge.w/2-pw/2,y:startLedge.y-ph-2,
+    w:pw,h:ph,vx:0,vy:0,onGround:true,groundPlat:startLedge,
+    facing:1,squash:0,stretch:0,blinkT:rand(60,200),coyote:0,jumpBuf:0,visited:new Set()};
+  camX=0;puffs=[];
+  if(!stars)buildSky();
+}
+
+const ORBIT_COLORS=['#7fd4ff','#ff9e7d','#ffd166','#b98bff','#6ee7c8'];
+
+function updatePlatforms(t){
+  for(const p of platforms){
+    if(p===startLedge)continue;
+
+    // orbit direction accumulates rather than being a pure function of t,
+    // so a temporary reversal during a glitch is a smooth velocity flip —
+    // the platform stays exactly on its ellipse the whole time, so this
+    // never pushes it out of the range the level was proven solvable for
+    if(p.ang===undefined) p.ang=p.phase;
+    if(p._lastOrbT===undefined) p._lastOrbT=t;
+    const dt=Math.min(t-p._lastOrbT,50); p._lastOrbT=t;
+
+    const glitching=glitchState(p,t,{every:[5000,10000],dur:[600,1100]});
+    const dir = glitching ? -1 : 1;
+    p.ang += dt*p.angSpeed*dir;
+
+    p.x=p.anchorX+p.rx*Math.cos(p.ang)-p.size/2;
+    p.y=p.anchorY+p.ry*Math.sin(p.ang)-p.size/2;
+  }
+}
+
+function drawPlatform(p,t){
+  if(p===startLedge){
+    const r=p.h*0.5;
+    ctx.save();
+    ctx.fillStyle='rgba(255,255,255,0.07)';
+    roundRect(p.x-3,p.y+2,p.w+6,p.h+5,r);ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='rgba(230,214,255,0.85)';
+    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-8);
+    return;
+  }
+  drawOrbiter(p,t);
+}
+
+function drawOrbiter(p,t){
+  const fill=ORBIT_COLORS[p.hue%ORBIT_COLORS.length];
+  const acx=p.anchorX, acy=p.anchorY;
+
+  // faint dashed ellipse tracing the full orbit path, so the player can
+  // read the whole loop at a glance instead of guessing where it goes
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.10)';
+  ctx.lineWidth=1.2;
+  ctx.setLineDash([4,6]);
+  ctx.beginPath();ctx.ellipse(acx,acy,p.rx,p.ry,0,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // short motion trail behind the orbiter along its direction of travel
+  ctx.save();
+  for(let k=1;k<=4;k++){
+    const trailAng=p.ang-k*0.10*Math.sign(p.angSpeed);
+    const tx=acx+p.rx*Math.cos(trailAng), ty=acy+p.ry*Math.sin(trailAng);
+    ctx.globalAlpha=(1-k/5)*0.22;
+    ctx.fillStyle=fill;
+    ctx.beginPath();ctx.arc(tx,ty,p.size*0.28,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+
+  const cx=p.x+p.size/2, cy=p.y+p.size/2;
+  ctx.save();
+  ctx.translate(cx,cy);
+
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath();ctx.arc(2,4,p.size/2-2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor=p.glitching?'#ff2e6e':fill; ctx.shadowBlur=p.glitching?(20+Math.sin(t*0.06)*10):16;
+  ctx.fillStyle=fill;
+  ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:'rgba(255,255,255,0.85)';
+  ctx.lineWidth=Math.max(1.5,p.size*0.05);
+  ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.stroke();
+
+  ctx.restore();
+
+  if(player.visited.has(p)){
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('✦',cx,p.y-p.size*0.28);
+  }
+}
+bootGame();
+</script>
+</body>
+</html>

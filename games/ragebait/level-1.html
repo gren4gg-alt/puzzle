@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1035">
+<title>DRIFT HOP</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="title">DRIFT HOP · LV.1</div>
+    <div class="right">
+      <div class="stat">FALLS <b id="deathCount">0</b></div>
+      <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+      <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
+      <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
+      <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="game"></canvas>
+
+    <div id="touch">
+      <div class="pad moves">
+        <div class="tbtn" id="btnLeft">◀</div>
+        <div class="tbtn" id="btnRight">▶</div>
+      </div>
+      <div class="pad"><div class="tbtn" id="btnJump">HOP</div></div>
+    </div>
+
+    <div class="screen hidden" id="pauseScreen">
+      <h1 class="paused">PAUSED</h1>
+      <div class="btn-row"><button class="big-btn" id="resumeBtn">▶ Resume</button></div>
+      <div class="btn-row">
+        <button class="ghost-btn" id="retryBtn">🔄 Retry</button>
+        <button class="ghost-btn" id="homeBtnPause">🏠 Home</button>
+      </div>
+    </div>
+
+    <div class="screen" id="overlay">
+      <h1 id="overlayTitle">DRIFT HOP</h1>
+      <p id="overlayText">
+        Guide <b>Momo</b> across the sky islands. Each one rides up and down its own long,
+        independent path — you won't always have somewhere to land. Wait on your current island,
+        watch the next one swing into range, then time your hop. Reach the glowing portal to finish.
+      </p>
+      <p id="controlHint">Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp; Pause: <b>P</b></p>
+      <div class="btn-row" id="winRow" style="display:none;">
+        <button class="big-btn" id="nextBtn">Next Level ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">islands aren't always in reach — plant, watch the swing, then time your hop</div>
+</div>
+
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script>
+/* ==== LEVEL 1 — piston platforms + base star/mote scenery ====
+   Only this level's obstacle behaviour lives here. Everything else
+   (physics, camera, audio, pause/home/fullscreen, character, portal,
+   starfield) comes from engine.js / shared.js / shared.css. */
+const LEVEL_ID='level-1';
+const LEVEL_TITLE='DRIFT HOP';
+
+/* ---- silhouette environment (image background + matching land) ---- */
+window.SKY_THEME={ sky:['#1a1030','#2a1b3f','#3a2450','#4a2c52'], nebula:'201,164,255' };
+window.BG_IMAGE='bg/bg-canyon-violet.png';
+window.BG_PARALLAX=0.22;
+window.BG_DRIFT=0.006;
+window.GLASS_BLUR=1.2;
+window.GLASS_TINT='rgba(70,45,110,0.22)';
+window.SHOW_STARS=false;
+window.SHOW_MOTES=false;
+window.SHOW_NEBULA=false;
+window.PLATFORM_STYLE={ body:'#0a0d14', rim:'rgba(201,164,255,0.85)', glow:'#c9a4ff' };
+window.LAND_STYLE={ body:'#190624' };
+window.AMBIENT={ stars:24, mist:7, tint:'235,215,255' };
+window.MOMO_AURA='201,164,255';
+
+function winFlavorText(deaths){
+  return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles the drift paths and shrink timers.`;
+}
+
+function buildLevel(){
+  const SPACING=125*scale, WANDER=16*scale;
+  const PW_MIN=64*scale,PW_MAX=86*scale;
+  const reach=SAFE_REACH*scale,rise=SAFE_RISE*scale;
+  platforms=[];
+  const groundY=PLAY_H-40;
+
+  startLedge={x:24,y:groundY,w:140*scale,h:16*scale,baseW:140*scale,
+    type:'home',shrinkable:false,hue:0};
+  startLedge.slotCX=startLedge.x+startLedge.w/2;
+  platforms.push(startLedge);
+
+  let prevCX=startLedge.slotCX,prevY=groundY,prevHalfW=startLedge.w/2;
+  const firstCX=startLedge.x+startLedge.w+SPACING*0.55;
+
+  // Platforms are pistons: they travel a LONG vertical distance on their own
+  // independent timer. The player only gets a landing window when a platform
+  // swings back into reach — so you plant on the current platform and wait
+  // for the right moment rather than always having somewhere to jump.
+  const travelTop=PLAY_H*0.16, travelBottom=PLAY_H-56;
+
+  for(let i=0;i<PLATFORM_COUNT;i++){
+    const w=rand(PW_MIN,PW_MAX);
+    const slotCX=prevCX+prevHalfW+w/2+reach*0.72;
+
+    const bandMid=Math.max(travelTop+40*scale, Math.min(travelBottom-40*scale, prevY));
+    const amp=rand(H*0.30,H*0.44);
+    const minY=Math.max(travelTop,bandMid-amp/2);
+    const maxY=Math.min(travelBottom,bandMid+amp/2);
+    const period=rand(2600,4600);
+
+    platforms.push({
+      slotCX,w,h:16*scale,baseW:w,type:'piston',
+      minY,maxY,period,phase:rand(0,period),
+      x:slotCX-w/2,y:minY,
+      shrinkable:Math.random()<0.55,
+      nextShrinkAt:performance.now()+rand(3200,7000),
+      shrinking:false,warn:false,regrow:false,warned:false,hue:i,
+    });
+    prevCX=slotCX;prevY=(minY+maxY)/2;prevHalfW=w/2;
+  }
+
+  const last=platforms[platforms.length-1];
+  portal={x:last.slotCX+last.w/2+72*scale,y:(last.minY+last.maxY)/2,r:32*scale};
+  worldWidth=portal.x+150;
+
+  const pw=28*scale,ph=30*scale;
+  player={x:startLedge.x+startLedge.w/2-pw/2,y:startLedge.y-ph-2,
+    w:pw,h:ph,vx:0,vy:0,onGround:true,groundPlat:startLedge,
+    facing:1,squash:0,stretch:0,blinkT:rand(60,200),coyote:0,jumpBuf:0,visited:new Set()};
+  camX=0;puffs=[];
+  if(!stars)buildSky();
+}
+
+const PLAT_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
+
+function updatePlatforms(t){
+  for(const p of platforms){
+    if(p===startLedge)continue;
+    const cyc=((t+p.phase)%(p.period*2))/p.period;
+    const tri=cyc<1?cyc:2-cyc;
+    const baseY=p.minY+(p.maxY-p.minY)*tri;
+    const glitching=glitchState(p,t);
+    if(glitching){
+      const wob=Math.sin((t-p._glitchStart)*0.022+p._glitchSeed)*46*scale*p._glitchEnv;
+      p.y=baseY+wob;
+      p.x=p.slotCX-p.w/2+Math.cos((t-p._glitchStart)*0.018+p._glitchSeed)*28*scale*p._glitchEnv;
+    }else{
+      p.y=baseY;
+      p.x=p.slotCX-p.w/2;
+    }
+    if(p.shrinkable){
+      p.warn=(!p.shrinking&&t>=p.nextShrinkAt-450&&t<p.nextShrinkAt);
+      if(p.warn&&!p.warned){p.warned=true;Snd.shrink();}
+      if(!p.shrinking&&t>=p.nextShrinkAt){
+        p.shrinking=true;p.shrinkStart=t;p.warned=false;
+        p.shrinkFrom=p.w;p.shrinkTo=Math.max(32*scale,p.baseW*0.5);
+      }
+      if(p.shrinking){
+        const tt=Math.min(1,(t-p.shrinkStart)/550);
+        p.w=p.shrinkFrom+(p.shrinkTo-p.shrinkFrom)*tt;
+        if(tt>=1){p.shrinking=false;p.nextShrinkAt=t+rand(3800,7500);p.regrow=true;}
+      }
+      if(p.regrow&&!p.shrinking){
+        p.w=Math.min(p.baseW,p.w+0.25);
+        if(p.w>=p.baseW)p.regrow=false;
+      }
+    }
+  }
+}
+
+function drawPlatform(p,t){
+  const isHome=p===startLedge;
+  if(isHome && drawGroundLand(p)) return;
+  if(!isHome && drawSilhouettePlatform(p,t)) {
+    if(player.visited.has(p)){
+      ctx.fillStyle='rgba(255,255,255,0.45)';
+      ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+      ctx.fillText('\u2726',p.x+p.w/2,p.y-6);
+    }
+    return;
+  }
+  const fill=isHome?'#b98bff':PLAT_COLORS[p.hue%PLAT_COLORS.length];
+  const r=p.h*0.5;
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.07)';
+  roundRect(p.x-3,p.y+2,p.w+6,p.h+5,r);ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
+  else if(p.warn){ctx.shadowColor='#ffd166';ctx.shadowBlur=18+Math.sin(t*0.03)*8;}
+  else{ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;}
+  ctx.fillStyle=fill;roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
+  if(p.glitching){
+    ctx.strokeStyle=`rgba(255,46,110,${0.5+0.4*Math.sin(t*0.08)})`;
+    ctx.lineWidth=2;roundRect(p.x,p.y,p.w,p.h,r);ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.28)';
+  roundRect(p.x+r*0.6,p.y+2,Math.max(4,p.w-r*1.2),p.h*0.26,p.h*0.13);ctx.fill();
+  ctx.restore();
+
+  if(player.visited.has(p)&&!isHome){
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('✦',p.x+p.w/2,p.y-6);
+  }
+  if(isHome){
+    ctx.fillStyle='rgba(230,214,255,0.85)';
+    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-8);
+  }
+}
+
+bootGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1035">
+<title>DRIFT HOP · Pendulum Peak</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="title">DRIFT HOP · LV.8</div>
+    <div class="right">
+      <div class="stat">FALLS <b id="deathCount">0</b></div>
+      <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+      <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
+      <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
+      <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="game"></canvas>
+
+    <div id="touch">
+      <div class="pad moves">
+        <div class="tbtn" id="btnLeft">◀</div>
+        <div class="tbtn" id="btnRight">▶</div>
+      </div>
+      <div class="pad"><div class="tbtn" id="btnJump">HOP</div></div>
+    </div>
+
+    <div class="screen hidden" id="pauseScreen">
+      <h1 class="paused">PAUSED</h1>
+      <div class="btn-row"><button class="big-btn" id="resumeBtn">▶ Resume</button></div>
+      <div class="btn-row">
+        <button class="ghost-btn" id="retryBtn">🔄 Retry</button>
+        <button class="ghost-btn" id="homeBtnPause">🏠 Home</button>
+      </div>
+    </div>
+
+    <div class="screen" id="overlay">
+      <h1 id="overlayTitle">LEVEL 8</h1>
+      <p id="overlayText">
+        Ten pendulums at the summit, with the longest arcs and the tightest timing in the game. They linger at the peaks and race through the bottom — read two swings at once, and don't waste a window.
+      </p>
+      <p id="controlHint">Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp; Pause: <b>P</b></p>
+      <div class="btn-row" id="winRow" style="display:none;">
+        <button class="big-btn" id="nextBtn">Next Level ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">ten arcs, summit difficulty — read two swings at once</div>
+</div>
+
+
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script>
+// ==== LEVEL 8 — pendulum swings at the summit: longest arcs, tightest timing ====
+const LEVEL_ID='level-8';
+const LEVEL_TITLE='DRIFT HOP';
+const PEND_TUNING={count:10, reachMul:0.60, arm:[65,95], ang:[0.50,0.75]};
+function winFlavorText(deaths){
+  return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles each pendulum's arm length, swing angle, and speed, at the summit.`;
+}
+
+window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,220,170' };
+window.SHOW_NEBULA = true;
+window.SHOW_STARS = false;
+window.SHOW_MOTES = false;
+window.MUSIC_THEME = 'mountain';
+window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+
+let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+
+function ridgeLine(baseY, amp, seedCount, spanW){
+  // procedurally generated jagged mountain silhouette, tileable across spanW
+  const pts=[];
+  const n=seedCount;
+  for(let i=0;i<=n;i++){
+    const x=(i/n)*spanW;
+    const y=baseY - Math.abs(Math.sin(i*1.7)+Math.sin(i*0.6+1.3)*0.6)*amp*rand(0.65,1);
+    pts.push({x,y});
+  }
+  return pts;
+}
+
+function buildExtraSky(){
+  const spanW=2400;
+  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
+  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+
+  leaves=[];
+  for(let i=0;i<22;i++)leaves.push({
+    x:rand(0,2200), y:rand(-40,H), size:rand(5,10)*scale,
+    depth:rand(0.55,0.85), sway:rand(0,Math.PI*2), swaySpeed:rand(0.0009,0.0018),
+    fall:rand(0.25,0.55), rot:rand(0,Math.PI*2), rotSpeed:rand(-0.02,0.02),
+    hue:choice(['#e8a23c','#d9622b','#c9432f','#e0b84a','#8fae4a']),
+  });
+
+  windGusts=[];
+  nextGustAt=performance.now()+rand(1500,4000);
+}
+
+function drawRidge(r, camX, W, H){
+  const spanW=r.spanW;
+  const offset=((camX*r.depth)%spanW+spanW)%spanW;
+  ctx.fillStyle=r.color;
+  for(let rep=-1;rep<=1;rep++){
+    ctx.beginPath();
+    const baseX=rep*spanW-offset;
+    ctx.moveTo(baseX, H);
+    for(const p of r.pts) ctx.lineTo(baseX+p.x, p.y);
+    ctx.lineTo(baseX+spanW, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawExtraScenery(t){
+  drawRidge(ridgesFar, camX, W, H);
+  drawRidge(ridgesNear, camX, W, H);
+
+  // wind gusts: soft translucent streaks sweeping left to right
+  if(t>=nextGustAt){
+    windGusts.push({x:-80,y:rand(H*0.15,H*0.7),len:rand(90,170),speed:rand(4.5,7),life:1});
+    nextGustAt=t+rand(1800,4200);
+    if(typeof Snd!=='undefined') Snd.windGust();
+  }
+  for(let i=windGusts.length-1;i>=0;i--){
+    const g=windGusts[i];
+    g.x+=g.speed; g.life-=0.010;
+    if(g.x>W+100||g.life<=0){ windGusts.splice(i,1); continue; }
+    ctx.save();
+    ctx.globalAlpha=0.16*g.life;
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=2;
+    ctx.lineCap='round';
+    for(let k=0;k<3;k++){
+      ctx.beginPath();
+      ctx.moveTo(g.x-k*14, g.y+k*6);
+      ctx.lineTo(g.x-k*14+g.len, g.y+k*6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // floating leaves drifting down with a gentle sideways sway
+  for(const lf of leaves){
+    lf.y+=lf.fall; lf.rot+=lf.rotSpeed;
+    if(lf.y>H+20){ lf.y=-20; lf.x=rand(0,2200); }
+    const swayX = Math.sin(t*lf.swaySpeed+lf.sway)*18;
+    const lx=((lf.x-camX*lf.depth)%2200+2200)%2200 + swayX;
+    ctx.save();
+    ctx.translate(lx, lf.y);
+    ctx.rotate(lf.rot);
+    ctx.fillStyle=lf.hue;
+    ctx.beginPath();
+    ctx.ellipse(0,0,lf.size,lf.size*0.55,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function buildLevel(){
+  const reach=SAFE_REACH*scale, rise=SAFE_RISE*scale;
+  platforms=[];
+  const groundY=PLAY_H-40;
+
+  startLedge={x:24,y:groundY,w:140*scale,h:16*scale,baseW:140*scale,type:'home',hue:0};
+  startLedge.slotCX=startLedge.x+startLedge.w/2;
+  platforms.push(startLedge);
+
+  const PEND_COUNT=PEND_TUNING.count;
+  const anchorTop=PLAY_H*0.14;
+  let prevCX=startLedge.slotCX, prevBottomY=groundY, prevHalfW=startLedge.w/2;
+
+  for(let i=0;i<PEND_COUNT;i++){
+    const size=rand(44,56)*scale;
+    const armLen=rand(PEND_TUNING.arm[0],PEND_TUNING.arm[1])*scale;
+    const maxAngle=rand(PEND_TUNING.ang[0],PEND_TUNING.ang[1]); // radians off vertical
+
+    // the platform's LOWEST point (angle=0, hanging straight down) sits
+    // near the previous pendulum's resting height, same anchoring trick
+    // used for the piston levels — guarantees a reachable moment exists
+    const restBottomY=Math.max(anchorTop+armLen*1.3, Math.min(PLAY_H-70, prevBottomY+rand(-rise*0.5,rise*0.5)));
+    const anchorX=prevCX+prevHalfW+size/2+reach*PEND_TUNING.reachMul+armLen*Math.sin(maxAngle);
+    const anchorY=restBottomY-armLen;
+
+    const dir=(i%2===0)?1:-1;
+    platforms.push({
+      type:'pendulum', anchorX, anchorY, armLen, maxAngle, size, w:size, h:size, restBottomY,
+      angSpeed:dir*rand(0.0011,0.0018), phase:rand(0,Math.PI*2),
+      x:anchorX-size/2, y:restBottomY-size/2, hue:i,
+    });
+    prevCX=anchorX; prevHalfW=size/2; prevBottomY=restBottomY;
+  }
+
+  // ---- verify & repair -------------------------------------------------
+  // Frame-accurate check that every hop is actually flyable, searching the
+  // realistic input strategies a player has (hold the direction for a while,
+  // then release or brake) rather than assuming they hold it the whole time.
+  function pendAt(p,tt){
+    if(p===startLedge) return {x:p.x+p.w/2, y:p.y, w:p.w};
+    const a=p.maxAngle*Math.sin(tt*p.angSpeed+p.phase);
+    return {x:p.anchorX+p.armLen*Math.sin(a)-p.size/2,
+            y:p.anchorY+p.armLen*Math.cos(a)-p.size/2, w:p.size};
+  }
+  function flyable(A,B){
+    const pw=28*scale, ph=30*scale;
+    for(const hold of [0,2,4,6,8,10,13,16,20,25,30,40,60,999]){
+      for(const brake of [false,true]){
+        let x=A.x, y=A.y-ph, vx=0, vy=JUMP_V*scale;
+        for(let i=0;i<40;i++){vx+=MOVE_ACCEL*scale;vx=Math.max(-MAX_VX*scale,Math.min(MAX_VX*scale,vx));vx*=FRICTION;}
+        for(let f=0;f<220;f++){
+          const prevFeet=y+ph;
+          if(f<hold) vx+=MOVE_ACCEL*scale; else if(brake) vx-=MOVE_ACCEL*scale;
+          vx=Math.max(-MAX_VX*scale,Math.min(MAX_VX*scale,vx)); vx*=FRICTION;
+          vy+=GRAVITY*scale; x+=vx; y+=vy;
+          const feet=y+ph, cx=x+pw*0.5;
+          if(feet>=B.y && prevFeet<B.y+2 && cx>B.x && cx<B.x+B.w) return true;
+          if(y>PLAY_H+300) break;
+        }
+      }
+    }
+    return false;
+  }
+  function linkFlyable(a,b){
+    for(let tt=0;tt<25000;tt+=60){
+      const A=pendAt(a,tt);
+      for(let dt=0;dt<=600;dt+=60) if(flyable(A,pendAt(b,tt+dt))) return true;
+    }
+    return false;
+  }
+  for(let i=1;i<platforms.length;i++){
+    let guard=0;
+    while(!linkFlyable(platforms[i-1],platforms[i]) && guard++<25){
+      const b=platforms[i], a=platforms[i-1];
+      b.anchorX -= 8*scale;
+      b.maxAngle = Math.max(0.30, b.maxAngle*0.9);
+      const pY = (a===startLedge) ? a.y : a.restBottomY;
+      b.restBottomY = pY + (b.restBottomY - pY)*0.75;
+      b.anchorY = b.restBottomY - b.armLen;
+    }
+  }
+
+  const last=platforms[platforms.length-1];
+  portal={x:last.anchorX+last.armLen*Math.sin(last.maxAngle)+80*scale, y:last.anchorY+last.armLen-40*scale, r:32*scale};
+  worldWidth=portal.x+150;
+
+  const pw=28*scale,ph=30*scale;
+  player={x:startLedge.x+startLedge.w/2-pw/2,y:startLedge.y-ph-2,
+    w:pw,h:ph,vx:0,vy:0,onGround:true,groundPlat:startLedge,
+    facing:1,squash:0,stretch:0,blinkT:rand(60,200),coyote:0,jumpBuf:0,visited:new Set()};
+  camX=0;puffs=[];
+  if(!stars)buildSky();
+}
+
+const PEND_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
+
+function updatePlatforms(t){
+  for(const p of platforms){
+    if(p===startLedge)continue;
+    // simple-harmonic swing between -maxAngle and +maxAngle, hanging from
+    // the anchor — slows near the peaks (like a real pendulum), fastest
+    // through the bottom, which is exactly where the fling bonus pays off
+    // accumulate the swing phase rather than recomputing it from raw t, so a
+    // glitch reversal is a smooth velocity flip instead of a visual pop
+    const glitching=glitchState(p,t,{every:[5000,10000],dur:[500,900]});
+    if(p._sw===undefined){p._sw=p.phase; p._lastT=t;}
+    const dt=Math.min(t-p._lastT,50); p._lastT=t;
+    p._sw += dt*p.angSpeed*(glitching?-1:1);
+    p.angle = p.maxAngle*Math.sin(p._sw);
+    p.x=p.anchorX+p.armLen*Math.sin(p.angle)-p.size/2;
+    p.y=p.anchorY+p.armLen*Math.cos(p.angle)-p.size/2;
+  }
+}
+
+function drawPlatform(p,t){
+  const isHome=p===startLedge;
+  if(isHome){
+    const r=p.h*0.5;
+    ctx.save();ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();ctx.restore();
+    ctx.fillStyle='rgba(230,214,255,0.85)';ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-8);
+    return;
+  }
+
+  const fill=PEND_COLORS[p.hue%PEND_COLORS.length];
+  const cx=p.x+p.w/2, cy=p.y+p.h/2;
+
+  // chain from the fixed anchor down to the platform
+  ctx.save();
+  ctx.strokeStyle='rgba(90,80,70,0.85)';
+  ctx.lineWidth=Math.max(2,3*scale);
+  ctx.setLineDash([5*scale,4*scale]);
+  ctx.beginPath();
+  ctx.moveTo(p.anchorX, p.anchorY);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(90,80,70,0.9)';
+  ctx.beginPath();ctx.arc(p.anchorX,p.anchorY,4*scale,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
+  else{ctx.shadowColor=fill;ctx.shadowBlur=14;}
+  ctx.fillStyle=fill;
+  ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:'rgba(255,255,255,0.8)';
+  ctx.lineWidth=Math.max(1.5,p.size*0.05);
+  ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.stroke();
+
+  if(player.visited.has(p)){
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('✦',cx,p.y-p.size*0.28);
+  }
+}
+
+bootGame();
+
+bootGame();
+</script>
+</body>
+</html>

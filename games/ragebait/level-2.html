@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1035">
+<title>DRIFT HOP · Bounce Pads</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="title">DRIFT HOP · LV.2</div>
+    <div class="right">
+      <div class="stat">FALLS <b id="deathCount">0</b></div>
+      <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+      <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
+      <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
+      <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="game"></canvas>
+
+    <div id="touch">
+      <div class="pad moves">
+        <div class="tbtn" id="btnLeft">◀</div>
+        <div class="tbtn" id="btnRight">▶</div>
+      </div>
+      <div class="pad"><div class="tbtn" id="btnJump">HOP</div></div>
+    </div>
+
+    <div class="screen hidden" id="pauseScreen">
+      <h1 class="paused">PAUSED</h1>
+      <div class="btn-row"><button class="big-btn" id="resumeBtn">▶ Resume</button></div>
+      <div class="btn-row">
+        <button class="ghost-btn" id="retryBtn">🔄 Retry</button>
+        <button class="ghost-btn" id="homeBtnPause">🏠 Home</button>
+      </div>
+    </div>
+
+    <div class="screen" id="overlay">
+      <h1 id="overlayTitle">LEVEL 2</h1>
+      <p id="overlayText">
+        Land on a pad and it launches you straight back up — no jump button needed, the
+        landing IS the jump. Hold a direction while you're airborne to aim the arc, then
+        ease off once you're lined up so you don't overshoot. Chain the bounces all the
+        way to the portal.
+      </p>
+      <p id="controlHint">Move: <b>A/D</b> or <b>←/→</b> to steer mid-air &nbsp;·&nbsp; First hop: <b>Space</b> &nbsp;·&nbsp; Pause: <b>P</b></p>
+      <div class="btn-row" id="winRow" style="display:none;">
+        <button class="big-btn" id="nextBtn">Next Level ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">landing auto-bounces you — steer mid-air, then ease off before you overshoot</div>
+</div>
+
+
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script>
+// ==== LEVEL 2 — bounce pads: landing auto-launches you, aim mid-air ====
+const LEVEL_ID='level-2';
+const LEVEL_TITLE='DRIFT HOP';
+
+/* ---- silhouette environment (image background + matching land) ---- */
+window.SKY_THEME={ sky:['#050a12','#0a1622','#12283a','#1a3548'], nebula:'143,214,255' };
+window.BG_IMAGE='bg/bg-canyon-city.png';
+window.BG_PARALLAX=0.22;
+window.BG_DRIFT=0.006;
+window.GLASS_BLUR=1;
+window.GLASS_TINT='rgba(40,80,120,0.20)';
+window.SHOW_STARS=false;
+window.SHOW_MOTES=false;
+window.SHOW_NEBULA=false;
+window.PLATFORM_STYLE={ body:'#0a0d14', rim:'rgba(143,214,255,0.85)', glow:'#8fd6ff' };
+window.LAND_STYLE={ body:'#010306' };
+window.AMBIENT={ stars:22, mist:8, tint:'215,238,255' };
+window.MOMO_AURA='143,214,255';
+
+function winFlavorText(deaths){
+  return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles the pad layout and bounce timing.`;
+}
+
+const BOUNCE_VEL=-19;
+
+// Frame-accurate flight check — mirrors the engine's exact physics and
+// exact collision test (feet crossing the target's top edge, horizontal
+// center inside its width), launching from the pad's LEFT edge (worst
+// case: farthest possible launch point from a rightward target).
+function bounceCanReach(fromX, fromY, fromIsStart, toX, toY, toW, isFirstHop){
+  const playerW=28*scale, playerH=30*scale;
+  let x=fromX, y=fromY, vx = fromIsStart ? 0 : 0, vy = isFirstHop ? JUMP_V*scale : BOUNCE_VEL*scale;
+  // a running start: the player has been holding the direction key while
+  // grounded, so horizontal speed is already near steady-state at takeoff
+  for(let i=0;i<40;i++){ vx+=MOVE_ACCEL*scale; vx=Math.max(-MAX_VX*scale,Math.min(MAX_VX*scale,vx)); vx*=FRICTION; }
+  for(let f=0;f<220;f++){
+    const prevFeetY=y+playerH;
+    vx+=MOVE_ACCEL*scale; vx=Math.max(-MAX_VX*scale,Math.min(MAX_VX*scale,vx)); vx*=FRICTION;
+    vy+=GRAVITY*scale;
+    x+=vx; y+=vy;
+    const feetNow=y+playerH;
+    const cx=x+playerW*0.5;
+    if(feetNow>=toY && prevFeetY<toY+2){
+      if(cx>toX && cx<toX+toW) return true;
+    }
+    if(y>PLAY_H+300) break;
+  }
+  return false;
+}
+
+function buildLevel(){
+  platforms=[];
+  const groundY=PLAY_H-40;
+
+  startLedge={x:24,y:groundY,w:140*scale,h:16*scale,baseW:140*scale,type:'home',hue:0};
+  startLedge.slotCX=startLedge.x+startLedge.w/2;
+  platforms.push(startLedge);
+
+  const PAD_COUNT=9;
+  const travelTop=PLAY_H*0.20, travelBottom=PLAY_H-70;
+  let prevCX=startLedge.slotCX, prevY=groundY, prevHalfW=startLedge.w/2;
+
+  for(let i=0;i<PAD_COUNT;i++){
+    const w=rand(56,68)*scale, h=16*scale;
+
+    let gap, dy;
+    if(i===0){
+      // first hop is a normal manual jump — much weaker than a bounce, and
+      // reach/rise trade off against each other in a single real jump, so
+      // this stays deep inside the safely-joint-reachable envelope rather
+      // than picking reach and rise independently
+      gap = 74*scale;
+      dy = rand(-14,20)*scale;
+    }else{
+      // bounce-powered hop: horizontal reach depends on how much of the
+      // flight time is "spent" gaining/losing height, so the safe gap
+      // grows with |dy| — this mirrors the real simulated envelope rather
+      // than using a fixed gap for every height difference
+      dy = rand(-64,64)*scale;
+      gap = (176 + 0.2*(dy/scale))*scale;
+    }
+
+    let y=prevY+dy;
+    y=Math.max(travelTop,Math.min(travelBottom,y));
+    const slotCX=prevCX+prevHalfW+w/2+gap;
+
+    const drift = Math.random()<0.3;
+    platforms.push({
+      type:'bounce', bouncePad:true, bounceVel:BOUNCE_VEL,
+      slotCX, w, h, x:slotCX-w/2, y, baseY:y,
+      drift, driftAmp: drift?rand(10,18)*scale:0, driftPeriod:rand(1800,2800), phase:rand(0,10000),
+      hue:i,
+    });
+    prevCX=slotCX; prevY=y; prevHalfW=w/2;
+  }
+
+  // ---- verify & repair --------------------------------------------------
+  // Confirm every hop is actually flyable with real physics; if one isn't
+  // (band-clamping near the top/bottom can occasionally distort a gap/dy
+  // pairing), pull the later pad in and flatten the height gap until it is.
+  for(let i=1;i<platforms.length;i++){
+    const a=platforms[i-1], b=platforms[i];
+    let guard=0;
+    while(guard++<40){
+      const fromX = a===startLedge ? a.x+a.w/2 : a.x;
+      const ok = bounceCanReach(fromX, a===startLedge?a.y:a.baseY, a===startLedge, b.x, b.baseY, b.w, i===1);
+      if(ok) break;
+      b.slotCX -= 6*scale; b.x=b.slotCX-b.w/2;
+      b.baseY = a===startLedge? a.y : a.baseY + (b.baseY-(a===startLedge?a.y:a.baseY))*0.7;
+      b.y=b.baseY;
+    }
+  }
+
+  // The last pad is still a bounce pad, so the portal must sit somewhere
+  // the post-bounce flight path actually passes through — not just any
+  // point within normal-jump range. This offset (+216, -9 from the pad's
+  // left edge, worst-case launch point) sits directly on that traced arc.
+  const last=platforms[platforms.length-1];
+  portal={x:last.x+216*scale, y:last.baseY-9*scale, r:34*scale};
+  worldWidth=portal.x+150;
+
+  const pw=28*scale,ph=30*scale;
+  player={x:startLedge.x+startLedge.w/2-pw/2,y:startLedge.y-ph-2,
+    w:pw,h:ph,vx:0,vy:0,onGround:true,groundPlat:startLedge,
+    facing:1,squash:0,stretch:0,blinkT:rand(60,200),coyote:0,jumpBuf:0,visited:new Set()};
+  camX=0;puffs=[];
+  if(!stars)buildSky();
+}
+
+const BOUNCE_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
+
+function updatePlatforms(t){
+  for(const p of platforms){
+    if(p===startLedge)continue;
+    if(p.drift){
+      const c=((t+p.phase)%(p.driftPeriod*2))/p.driftPeriod;
+      const tri=(c<1?c:2-c)*2-1;
+      p.x=p.slotCX-p.w/2+tri*p.driftAmp;
+    }else{
+      p.x=p.slotCX-p.w/2;
+    }
+    glitchState(p,t); // occasional red-flicker wobble, same as every other level
+    if(p.glitching){
+      const wob=Math.sin((t-p._glitchStart)*0.024+p._glitchSeed)*30*scale*p._glitchEnv;
+      p.y=p.baseY+wob;
+    }else{
+      p.y=p.baseY;
+    }
+  }
+}
+
+function drawPlatform(p,t){
+  const isHome=p===startLedge;
+  if(isHome && drawGroundLand(p)) return;
+  if(!isHome && drawSilhouettePlatform(p,t)) {
+    if(player.visited.has(p)){
+      ctx.fillStyle='rgba(255,255,255,0.45)';
+      ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+      ctx.fillText('\u2726',p.x+p.w/2,p.y-6);
+    }
+    return;
+  }
+  if(isHome){
+    const r=p.h*0.5;
+    ctx.save();ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
+    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();ctx.restore();
+    ctx.fillStyle='rgba(230,214,255,0.85)';ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-8);
+    return;
+  }
+  const fill=BOUNCE_COLORS[p.hue%BOUNCE_COLORS.length];
+  const r=p.h*0.5;
+  const cx=p.x+p.w/2;
+
+  // spring coils beneath the pad
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.35)';
+  ctx.lineWidth=Math.max(1.5,2.2*scale);
+  for(let s=0;s<3;s++){
+    const sx=p.x+p.w*(0.22+s*0.28);
+    ctx.beginPath();
+    ctx.moveTo(sx,p.y+p.h);
+    ctx.lineTo(sx-4*scale,p.y+p.h+7*scale);
+    ctx.lineTo(sx+4*scale,p.y+p.h+14*scale);
+    ctx.lineTo(sx,p.y+p.h+21*scale);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
+  else{ctx.shadowColor=fill;ctx.shadowBlur=14;}
+  ctx.fillStyle=fill;roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  roundRect(p.x+r*0.6,p.y+2,Math.max(4,p.w-r*1.2),p.h*0.26,p.h*0.13);ctx.fill();
+  ctx.restore();
+
+  if(player.visited.has(p)){
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('✦',cx,p.y-6);
+  }
+}
+
+bootGame();
+</script>
+</body>
+</html>

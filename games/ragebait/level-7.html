@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1035">
+<title>DRIFT HOP · LV.7</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="title">DRIFT HOP · LV.7</div>
+    <div class="right">
+      <div class="stat">FALLS <b id="deathCount">0</b></div>
+      <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+      <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
+      <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
+      <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <div id="canvasHolder">
+    <canvas id="game"></canvas>
+
+    <div id="touch">
+      <div class="pad moves">
+        <div class="tbtn" id="btnLeft">◀</div>
+        <div class="tbtn" id="btnRight">▶</div>
+      </div>
+      <div class="pad"><div class="tbtn" id="btnJump">HOP</div></div>
+    </div>
+
+    <div class="screen hidden" id="pauseScreen">
+      <h1 class="paused">PAUSED</h1>
+      <div class="btn-row"><button class="big-btn" id="resumeBtn">▶ Resume</button></div>
+      <div class="btn-row">
+        <button class="ghost-btn" id="retryBtn">🔄 Retry</button>
+        <button class="ghost-btn" id="homeBtnPause">🏠 Home</button>
+      </div>
+    </div>
+
+    <div class="screen" id="overlay">
+      <h1 id="overlayTitle">LEVEL 7</h1>
+      <p id="overlayText">
+        Twelve islands now, swinging across even more of the sky. The wind picks up the higher you climb — watch for gusts blowing leaves sideways as you time each hop.
+      </p>
+      <p id="controlHint">Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp; Pause: <b>P</b></p>
+      <div class="btn-row" id="winRow" style="display:none;">
+        <button class="big-btn" id="nextBtn">Next Level ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">twelve islands, longest swings yet — patience over speed</div>
+</div>
+
+
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script>
+// ==== LEVEL 7 — piston obstacles + mountain valley scenery ====
+const LEVEL_ID='level-7';
+const LEVEL_TITLE='DRIFT HOP';
+function winFlavorText(deaths){
+  return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles the drift paths and shrink timers, near the mountain's summit.`;
+}
+
+/* ---- Mountain valley scenery: parallax ridges, wind, floating leaves ----
+   Purely cosmetic — no effect on platforms, physics, or collision. */
+window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,220,170' };
+window.SHOW_NEBULA = true;
+window.SHOW_STARS = false;
+window.SHOW_MOTES = false;
+window.MUSIC_THEME = 'mountain';
+window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+
+let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+
+function ridgeLine(baseY, amp, seedCount, spanW){
+  // procedurally generated jagged mountain silhouette, tileable across spanW
+  const pts=[];
+  const n=seedCount;
+  for(let i=0;i<=n;i++){
+    const x=(i/n)*spanW;
+    const y=baseY - Math.abs(Math.sin(i*1.7)+Math.sin(i*0.6+1.3)*0.6)*amp*rand(0.65,1);
+    pts.push({x,y});
+  }
+  return pts;
+}
+
+function buildExtraSky(){
+  const spanW=2400;
+  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
+  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+
+  leaves=[];
+  for(let i=0;i<22;i++)leaves.push({
+    x:rand(0,2200), y:rand(-40,H), size:rand(5,10)*scale,
+    depth:rand(0.55,0.85), sway:rand(0,Math.PI*2), swaySpeed:rand(0.0009,0.0018),
+    fall:rand(0.25,0.55), rot:rand(0,Math.PI*2), rotSpeed:rand(-0.02,0.02),
+    hue:choice(['#e8a23c','#d9622b','#c9432f','#e0b84a','#8fae4a']),
+  });
+
+  windGusts=[];
+  nextGustAt=performance.now()+rand(1500,4000);
+}
+
+function drawRidge(r, camX, W, H){
+  const spanW=r.spanW;
+  const offset=((camX*r.depth)%spanW+spanW)%spanW;
+  ctx.fillStyle=r.color;
+  for(let rep=-1;rep<=1;rep++){
+    ctx.beginPath();
+    const baseX=rep*spanW-offset;
+    ctx.moveTo(baseX, H);
+    for(const p of r.pts) ctx.lineTo(baseX+p.x, p.y);
+    ctx.lineTo(baseX+spanW, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawExtraScenery(t){
+  drawRidge(ridgesFar, camX, W, H);
+  drawRidge(ridgesNear, camX, W, H);
+
+  // wind gusts: soft translucent streaks sweeping left to right
+  if(t>=nextGustAt){
+    windGusts.push({x:-80,y:rand(H*0.15,H*0.7),len:rand(90,170),speed:rand(4.5,7),life:1});
+    nextGustAt=t+rand(1800,4200);
+    if(typeof Snd!=='undefined') Snd.windGust();
+  }
+  for(let i=windGusts.length-1;i>=0;i--){
+    const g=windGusts[i];
+    g.x+=g.speed; g.life-=0.010;
+    if(g.x>W+100||g.life<=0){ windGusts.splice(i,1); continue; }
+    ctx.save();
+    ctx.globalAlpha=0.16*g.life;
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=2;
+    ctx.lineCap='round';
+    for(let k=0;k<3;k++){
+      ctx.beginPath();
+      ctx.moveTo(g.x-k*14, g.y+k*6);
+      ctx.lineTo(g.x-k*14+g.len, g.y+k*6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // floating leaves drifting down with a gentle sideways sway
+  for(const lf of leaves){
+    lf.y+=lf.fall; lf.rot+=lf.rotSpeed;
+    if(lf.y>H+20){ lf.y=-20; lf.x=rand(0,2200); }
+    const swayX = Math.sin(t*lf.swaySpeed+lf.sway)*18;
+    const lx=((lf.x-camX*lf.depth)%2200+2200)%2200 + swayX;
+    ctx.save();
+    ctx.translate(lx, lf.y);
+    ctx.rotate(lf.rot);
+    ctx.fillStyle=lf.hue;
+    ctx.beginPath();
+    ctx.ellipse(0,0,lf.size,lf.size*0.55,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function buildLevel(){
+  const SPACING=125*scale, WANDER=16*scale;
+  const PW_MIN=64*scale,PW_MAX=86*scale;
+  const reach=SAFE_REACH*scale,rise=SAFE_RISE*scale;
+  platforms=[];
+  const groundY=PLAY_H-40;
+
+  startLedge={x:24,y:groundY,w:140*scale,h:16*scale,baseW:140*scale,
+    type:'home',shrinkable:false,hue:0};
+  startLedge.slotCX=startLedge.x+startLedge.w/2;
+  platforms.push(startLedge);
+
+  let prevCX=startLedge.slotCX,prevY=groundY,prevHalfW=startLedge.w/2;
+  const firstCX=startLedge.x+startLedge.w+SPACING*0.55;
+
+  // Platforms are pistons: they travel a LONG vertical distance on their own
+  // independent timer. The player only gets a landing window when a platform
+  // swings back into reach — so you plant on the current platform and wait
+  // for the right moment rather than always having somewhere to jump.
+  const travelTop=PLAY_H*0.16, travelBottom=PLAY_H-56;
+
+  for(let i=0;i<12;i++){
+    const w=rand(PW_MIN,PW_MAX);
+    const slotCX=prevCX+prevHalfW+w/2+reach*0.86;
+
+    const bandMid=Math.max(travelTop+40*scale, Math.min(travelBottom-40*scale, prevY));
+    const amp=rand(H*0.34,H*0.48);
+    const minY=Math.max(travelTop,bandMid-amp/2);
+    const maxY=Math.min(travelBottom,bandMid+amp/2);
+    const period=rand(2600,4600);
+
+    platforms.push({
+      slotCX,w,h:16*scale,baseW:w,type:'piston',
+      minY,maxY,period,phase:rand(0,period),
+      x:slotCX-w/2,y:minY,
+      shrinkable:Math.random()<0.55,
+      nextShrinkAt:performance.now()+rand(3200,7000),
+      shrinking:false,warn:false,regrow:false,warned:false,hue:i,
+    });
+    prevCX=slotCX;prevY=(minY+maxY)/2;prevHalfW=w/2;
+  }
+
+  const last=platforms[platforms.length-1];
+  portal={x:last.slotCX+last.w/2+72*scale,y:(last.minY+last.maxY)/2,r:32*scale};
+  worldWidth=portal.x+150;
+
+  const pw=28*scale,ph=30*scale;
+  player={x:startLedge.x+startLedge.w/2-pw/2,y:startLedge.y-ph-2,
+    w:pw,h:ph,vx:0,vy:0,onGround:true,groundPlat:startLedge,
+    facing:1,squash:0,stretch:0,blinkT:rand(60,200),coyote:0,jumpBuf:0,visited:new Set()};
+  camX=0;puffs=[];
+  if(!stars)buildSky();
+}
+
+const PLAT_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
+
+function updatePlatforms(t){
+  for(const p of platforms){
+    if(p===startLedge)continue;
+    const cyc=((t+p.phase)%(p.period*2))/p.period;
+    const tri=cyc<1?cyc:2-cyc;
+    const baseY=p.minY+(p.maxY-p.minY)*tri;
+    const glitching=glitchState(p,t);
+    if(glitching){
+      const wob=Math.sin((t-p._glitchStart)*0.022+p._glitchSeed)*46*scale*p._glitchEnv;
+      p.y=baseY+wob;
+      p.x=p.slotCX-p.w/2+Math.cos((t-p._glitchStart)*0.018+p._glitchSeed)*28*scale*p._glitchEnv;
+    }else{
+      p.y=baseY;
+      p.x=p.slotCX-p.w/2;
+    }
+    if(p.shrinkable){
+      p.warn=(!p.shrinking&&t>=p.nextShrinkAt-450&&t<p.nextShrinkAt);
+      if(p.warn&&!p.warned){p.warned=true;Snd.shrink();}
+      if(!p.shrinking&&t>=p.nextShrinkAt){
+        p.shrinking=true;p.shrinkStart=t;p.warned=false;
+        p.shrinkFrom=p.w;p.shrinkTo=Math.max(32*scale,p.baseW*0.5);
+      }
+      if(p.shrinking){
+        const tt=Math.min(1,(t-p.shrinkStart)/550);
+        p.w=p.shrinkFrom+(p.shrinkTo-p.shrinkFrom)*tt;
+        if(tt>=1){p.shrinking=false;p.nextShrinkAt=t+rand(3800,7500);p.regrow=true;}
+      }
+      if(p.regrow&&!p.shrinking){
+        p.w=Math.min(p.baseW,p.w+0.25);
+        if(p.w>=p.baseW)p.regrow=false;
+      }
+    }
+  }
+}
+
+function drawPlatform(p,t){
+  const isHome=p===startLedge;
+  const fill=isHome?'#b98bff':PLAT_COLORS[p.hue%PLAT_COLORS.length];
+  const r=p.h*0.5;
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.07)';
+  roundRect(p.x-3,p.y+2,p.w+6,p.h+5,r);ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
+  else if(p.warn){ctx.shadowColor='#ffd166';ctx.shadowBlur=18+Math.sin(t*0.03)*8;}
+  else{ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;}
+  ctx.fillStyle=fill;roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
+  if(p.glitching){
+    ctx.strokeStyle=`rgba(255,46,110,${0.5+0.4*Math.sin(t*0.08)})`;
+    ctx.lineWidth=2;roundRect(p.x,p.y,p.w,p.h,r);ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.28)';
+  roundRect(p.x+r*0.6,p.y+2,Math.max(4,p.w-r*1.2),p.h*0.26,p.h*0.13);ctx.fill();
+  ctx.restore();
+
+  if(player.visited.has(p)&&!isHome){
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('✦',p.x+p.w/2,p.y-6);
+  }
+  if(isHome){
+    ctx.fillStyle='rgba(230,214,255,0.85)';
+    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-8);
+  }
+}
+bootGame();
+</script>
+</body>
+</html>

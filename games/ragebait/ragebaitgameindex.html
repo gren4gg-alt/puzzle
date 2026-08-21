@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1b1035">
+<title>RAGEBAIT — Level Select</title>
+<style>
+  :root{
+    --deep:#1b1035; --deep2:#2d1b4e;
+    --lilac:#b98bff; --mint:#6ee7c8; --coral:#ff9e7d;
+    --gold:#ffd166; --cream:#fff3c4; --soft:#9a86c4;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;padding:0;min-height:100%;background:var(--deep);
+    font-family:'Trebuchet MS','Segoe UI',ui-rounded,system-ui,sans-serif;
+    color:#f3ecff;overscroll-behavior:none;
+  }
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(185,139,255,.25), transparent 55%),
+      radial-gradient(ellipse at 90% 10%, rgba(110,231,200,.15), transparent 50%),
+      linear-gradient(180deg,#150c2b 0%,#2d1b4e 45%,#3d2360 100%);
+    min-height:100dvh;
+  }
+  #wrap{
+    max-width:760px;margin:0 auto;padding:28px 18px 60px;
+    padding-top:calc(28px + env(safe-area-inset-top));
+  }
+  header{text-align:center;margin-bottom:8px;}
+  h1{
+    font-size:clamp(30px,8vw,46px);margin:0;letter-spacing:5px;font-weight:900;
+    background:linear-gradient(90deg,var(--mint),var(--gold),var(--coral));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 3px 14px rgba(185,139,255,.4));
+  }
+  header p{color:var(--soft);font-size:13px;letter-spacing:1px;margin:6px 0 0;}
+
+  #stats{
+    display:flex;justify-content:center;gap:10px;margin:18px 0 26px;flex-wrap:wrap;
+  }
+  .pill{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+    padding:6px 14px;border-radius:999px;font-size:12px;letter-spacing:1px;color:var(--soft);
+  }
+  .pill b{color:var(--cream);}
+
+  #levels{display:flex;flex-direction:column;gap:16px;}
+
+  .card{
+    position:relative;display:flex;align-items:center;gap:16px;
+    background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;padding:16px 18px;
+    text-decoration:none;color:inherit;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+    overflow:hidden;
+  }
+  .card.playable{cursor:pointer;}
+  .card.playable:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.35);border-color:rgba(255,255,255,.25);}
+  .card.playable:active{transform:scale(.99);}
+  .card.locked{opacity:.5;filter:grayscale(.4);cursor:default;}
+
+  .thumb{
+    flex:0 0 64px;width:64px;height:64px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;font-size:28px;
+    box-shadow:inset 0 -6px 10px rgba(0,0,0,.18), 0 6px 14px rgba(0,0,0,.3);
+  }
+  .info{flex:1;min-width:0;}
+  .info .name{font-weight:900;font-size:16px;letter-spacing:.5px;margin:0 0 3px;}
+  .info .desc{font-size:12px;color:var(--soft);margin:0;line-height:1.4;}
+  .meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .tag{font-size:10.5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--soft);letter-spacing:.5px;}
+  .tag.best{color:var(--gold);background:rgba(255,209,102,.12);}
+  .tag.done{color:var(--mint);background:rgba(110,231,200,.14);}
+
+  .side{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .lvnum{
+    font-size:11px;font-weight:900;letter-spacing:1px;color:var(--soft);
+    background:rgba(0,0,0,.25);padding:3px 9px;border-radius:999px;
+  }
+  .arrow{font-size:20px;color:var(--cream);opacity:.8;}
+  .lock{font-size:22px;}
+
+  .shine{
+    position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(120deg, transparent 40%, rgba(255,255,255,.05) 50%, transparent 60%);
+  }
+
+  #resetRow{text-align:center;margin-top:34px;}
+  #resetBtn{
+    font-family:inherit;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:var(--soft);
+    padding:10px 22px;border-radius:999px;cursor:pointer;font-size:11px;
+    transition:background .15s,color .15s;
+  }
+  #resetBtn:hover{background:rgba(255,46,62,.18);color:#ffb3b3;border-color:rgba(255,46,62,.4);}
+
+  .comingsoon{
+    position:absolute;top:10px;right:14px;font-size:9.5px;letter-spacing:1px;
+    color:var(--soft);background:rgba(0,0,0,.3);padding:3px 8px;border-radius:999px;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>RAGEBAIT</h1>
+    <p>pick a level · progress is saved on this device</p>
+  </header>
+
+  <div id="stats">
+    <div class="pill">LEVELS CLEARED <b id="clearedCount">0</b>/<span id="totalCount">0</span></div>
+    <div class="pill">TOTAL FALLS <b id="totalFalls">0</b></div>
+  </div>
+
+  <div id="levels"></div>
+
+  <div id="resetRow">
+    <button id="resetBtn">Reset Progress</button>
+  </div>
+</div>
+
+<script>
+/* Same schema used by every level page — keep this list, the emoji/color
+   theme, and the localStorage key in sync with the level files. */
+const LEVELS=[
+  {
+    id:'level-1', file:'level-1.html', name:'Drift Hop',
+    desc:'Long-travel sky islands — plant, watch the swing, time your hop.',
+    emoji:'🐾', color:'linear-gradient(135deg,#6ee7c8,#2f9c85)',
+  },
+  {
+    id:'level-2', file:'level-2.html', name:'Bounce Pads',
+    desc:'Trampolines, not platforms — landing launches you. Chain the momentum.',
+    emoji:'🎯', color:'linear-gradient(135deg,#ffd166,#d9622b)',
+  },
+  {
+    id:'level-3', file:'level-3.html', name:'Orbit Run',
+    desc:'Platforms sweep full circles — catch the one reachable point each loop.',
+    emoji:'🪐', color:'linear-gradient(135deg,#7fd4ff,#3d8bbd)',
+  },
+  {
+    id:'level-4', file:'level-4.html', name:'Mountain Drift',
+    desc:'The swinging islands return over a windswept valley — longer swings, wider gaps.',
+    emoji:'🏔️', color:'linear-gradient(135deg,#a7d8ff,#e0956a)',
+  },
+  {
+    id:'level-5', file:'level-5.html', name:'Valley Pendulums',
+    desc:'Swinging arcs over the valley — they linger at the peaks, race through the bottom.',
+    emoji:'🌀', color:'linear-gradient(135deg,#bcdcff,#8fae4a)',
+  },
+  {
+    id:'level-6', file:'level-6.html', name:'Mountain Orbit',
+    desc:'Ten orbiting platforms sweep the ridgeline — ride the loops, pick your moment.',
+    emoji:'🌬️', color:'linear-gradient(135deg,#bcdcff,#8fae4a)',
+  },
+  {
+    id:'level-7', file:'level-7.html', name:'Summit Drift',
+    desc:'Twelve islands, the longest swings yet, near the mountain’s peak.',
+    emoji:'⛰️', color:'linear-gradient(135deg,#e9c9a0,#8fae4a)',
+  },
+  {
+    id:'level-8', file:'level-8.html', name:'Pendulum Peak',
+    desc:'Ten arcs at the summit — longest swings, tightest timing in the game.',
+    emoji:'🏆', color:'linear-gradient(135deg,#ffd166,#d9622b)',
+  },
+];
+
+const PROGRESS_KEY='ragebait_progress';
+function loadProgress(){
+  try{
+    const raw=localStorage.getItem(PROGRESS_KEY);
+    if(!raw) return {completed:{},unlocked:1};
+    const p=JSON.parse(raw);
+    return {completed:p.completed||{},unlocked:p.unlocked||1};
+  }catch(e){ return {completed:{},unlocked:1}; }
+}
+function resetProgress(){
+  try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
+  render();
+}
+
+function render(){
+  const progress=loadProgress();
+  const list=document.getElementById('levels');
+  list.innerHTML='';
+
+  let cleared=0, totalFalls=0;
+  LEVELS.forEach(lv=>{
+    const c=progress.completed[lv.id];
+    if(c){ cleared++; if(typeof c.bestDeaths==='number') totalFalls+=c.bestDeaths; }
+  });
+  document.getElementById('clearedCount').textContent=cleared;
+  document.getElementById('totalCount').textContent=LEVELS.length;
+  document.getElementById('totalFalls').textContent=totalFalls;
+
+  LEVELS.forEach((lv,i)=>{
+    const idx=i+1;
+    const isSoon=!!lv.soon;
+    const unlocked = idx<=progress.unlocked && !isSoon;
+    const done = !!progress.completed[lv.id];
+    const best = done ? progress.completed[lv.id].bestDeaths : null;
+
+    const el=document.createElement(unlocked?'a':'div');
+    el.className='card '+(unlocked?'playable':'locked');
+    if(unlocked) el.href=lv.file;
+
+    let metaHtml='';
+    if(done) metaHtml+=`<span class="tag done">✓ cleared</span>`;
+    if(typeof best==='number') metaHtml+=`<span class="tag best">best: ${best} fall${best===1?'':'s'}</span>`;
+    if(!unlocked && !isSoon) metaHtml+=`<span class="tag">clear level ${idx-1} to unlock</span>`;
+
+    el.innerHTML=`
+      <div class="shine"></div>
+      <div class="thumb" style="background:${lv.color}">${isSoon?'🔒':lv.emoji}</div>
+      <div class="info">
+        <p class="name">${lv.name}</p>
+        <p class="desc">${isSoon ? 'More levels are on the way.' : lv.desc}</p>
+        <div class="meta">${metaHtml}</div>
+      </div>
+      <div class="side">
+        <div class="lvnum">LV ${idx}</div>
+        ${unlocked?'<div class="arrow">▶</div>':'<div class="lock">🔒</div>'}
+      </div>
+      ${isSoon?'<div class="comingsoon">SOON</div>':''}
+    `;
+    list.appendChild(el);
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(confirm('Reset all level progress on this device? This cannot be undone.')) resetProgress();
+});
+
+render();
+</script>
+</body>
+</html>
