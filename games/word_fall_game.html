@@ -23,7 +23,33 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 body { background:#080b14; font-family:'Segoe UI',sans-serif; overflow:hidden; height:100dvh; display:flex; flex-direction:column; align-items:center; }
+.back-button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:20px;
+  padding:9px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.07);
+  color:var(--soft);
+  font-family:inherit;
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:.5px;
+  cursor:pointer;
+  transition:transform .15s, background .15s, color .15s;
+}
 
+.back-button:hover{
+  background:rgba(255,255,255,.13);
+  color:var(--cream);
+  transform:translateX(-2px);
+}
+
+.back-button:active{
+  transform:scale(.98);
+}
 /* ── AD ZONES ── */
 #adTop {
   width:100%; max-width:480px; height:50px;
@@ -242,6 +268,7 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
     <span class="hud-val" id="levelVal">1</span>
   </div>
   <div id="hudBtns">
+    <button class="hud-icon-btn" id="backBtn" title="Back" onclick="goHome()">←</button>
     <button class="hud-icon-btn" id="pauseBtn" title="Pause (P)" onclick="togglePause()">⏸</button>
     <button class="hud-icon-btn" id="fsBtn" title="Fullscreen (F)" onclick="toggleFullscreen()">⛶</button>
   </div>
@@ -912,6 +939,10 @@ function handleTap(pos){
         collectPowerup(l,i);
       } else {
         if(!l.selected){
+          if(selectedLetters.length>=7){
+            showToast('wrongToast','Max 7 letters!');
+            return;
+          }
           l.selected=true; l.pop=1;
           selectedLetters.push(l);
           SFX.tap(); haptic([10]);
@@ -1136,6 +1167,7 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 
   // Find all unselected normal tiles matching this letter
+  if (selectedLetters.length >= 7) { showToast('wrongToast','Max 7 letters!'); return; }
   const matches = letters.filter(l => l.type === 'normal' && !l.selected && l.char === key);
   if (matches.length === 0) return;
 

@@ -64,6 +64,8 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
+
 <script>
 // ==== LEVEL 4 — piston obstacles + mountain valley scenery ====
 const LEVEL_ID='level-4';
@@ -72,16 +74,20 @@ function winFlavorText(deaths){
   return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles the drift paths and shrink timers, high above the valley.`;
 }
 
-/* ---- Mountain valley scenery: parallax ridges, wind, floating leaves ----
-   Purely cosmetic — no effect on platforms, physics, or collision. */
+/* ---- Mountain valley scenery: 4-layer vector silhouette ridges, wind,
+   floating leaves. Purely cosmetic — no effect on platforms, physics, or
+   collision. Platforms/land render as flat mono silhouettes (PLATFORM_STYLE
+   / LAND_STYLE) tuned to sit against this palette instead of candy colours. */
 window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,220,170' };
 window.SHOW_NEBULA = true;
 window.SHOW_STARS = false;
 window.SHOW_MOTES = false;
 window.MUSIC_THEME = 'mountain';
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+window.PLATFORM_STYLE = { body:'#2a2538', rim:'rgba(159,216,255,0.85)', glow:'#9fd8ff' };
+window.LAND_STYLE = { body:'#0d1420' };
 
-let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+let ridgeLayers=null, leaves=null, windGusts=null, nextGustAt=0;
 
 function ridgeLine(baseY, amp, seedCount, spanW){
   // procedurally generated jagged mountain silhouette, tileable across spanW
@@ -97,8 +103,14 @@ function ridgeLine(baseY, amp, seedCount, spanW){
 
 function buildExtraSky(){
   const spanW=2400;
-  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
-  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+  // four atmospheric-perspective layers, hazy/distant to near-black/close —
+  // a proper layered vector silhouette rather than a single ridge pair
+  ridgeLayers=[
+    { pts:ridgeLine(H*0.52,H*0.16,12,spanW), depth:0.035, color:'rgba(190,205,225,0.45)', spanW },
+    { pts:ridgeLine(H*0.60,H*0.20,13,spanW), depth:0.075, color:'rgba(150,165,195,0.60)', spanW },
+    { pts:ridgeLine(H*0.68,H*0.24,12,spanW), depth:0.13,  color:'rgba(105,110,145,0.78)', spanW },
+    { pts:ridgeLine(H*0.76,H*0.30,11,spanW), depth:0.20,  color:'rgba(60,55,85,0.92)',    spanW },
+  ];
 
   leaves=[];
   for(let i=0;i<22;i++)leaves.push({
@@ -128,8 +140,7 @@ function drawRidge(r, camX, W, H){
 }
 
 function drawExtraScenery(t){
-  drawRidge(ridgesFar, camX, W, H);
-  drawRidge(ridgesNear, camX, W, H);
+  for(const layer of ridgeLayers) drawRidge(layer, camX, W, H);
 
   // wind gusts: soft translucent streaks sweeping left to right
   if(t>=nextGustAt){
@@ -191,7 +202,7 @@ function buildLevel(){
   // independent timer. The player only gets a landing window when a platform
   // swings back into reach — so you plant on the current platform and wait
   // for the right moment rather than always having somewhere to jump.
-  const travelTop=PLAY_H*0.16, travelBottom=PLAY_H-56;
+  const travelTop=PLAY_H*0.34, travelBottom=PLAY_H-46;
 
   for(let i=0;i<10;i++){
     const w=rand(PW_MIN,PW_MAX);
@@ -225,8 +236,6 @@ function buildLevel(){
   camX=0;puffs=[];
   if(!stars)buildSky();
 }
-
-const PLAT_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
 
 function updatePlatforms(t){
   for(const p of platforms){
@@ -265,39 +274,23 @@ function updatePlatforms(t){
 
 function drawPlatform(p,t){
   const isHome=p===startLedge;
-  const fill=isHome?'#b98bff':PLAT_COLORS[p.hue%PLAT_COLORS.length];
-  const r=p.h*0.5;
+  if(isHome && drawGroundLand(p)) return;
 
-  ctx.save();
-  ctx.fillStyle='rgba(255,255,255,0.07)';
-  roundRect(p.x-3,p.y+2,p.w+6,p.h+5,r);ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
-  else if(p.warn){ctx.shadowColor='#ffd166';ctx.shadowBlur=18+Math.sin(t*0.03)*8;}
-  else{ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;}
-  ctx.fillStyle=fill;roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
-  if(p.glitching){
-    ctx.strokeStyle=`rgba(255,46,110,${0.5+0.4*Math.sin(t*0.08)})`;
-    ctx.lineWidth=2;roundRect(p.x,p.y,p.w,p.h,r);ctx.stroke();
+  // shrink warning ring drawn under the mono silhouette body, since
+  // drawSilhouettePlatform only handles the glitch glow on its own
+  if(p.warn){
+    ctx.save();
+    ctx.shadowColor='#ffd166';ctx.shadowBlur=18+Math.sin(t*0.03)*8;
+    ctx.strokeStyle='rgba(255,209,102,0.55)';ctx.lineWidth=2.5*scale;
+    roundRect(p.x-3,p.y-3,p.w+6,p.h+6,p.h*0.5+3);ctx.stroke();
+    ctx.restore();
   }
-  ctx.restore();
-
-  ctx.save();
-  ctx.fillStyle='rgba(255,255,255,0.28)';
-  roundRect(p.x+r*0.6,p.y+2,Math.max(4,p.w-r*1.2),p.h*0.26,p.h*0.13);ctx.fill();
-  ctx.restore();
-
-  if(player.visited.has(p)&&!isHome){
-    ctx.fillStyle='rgba(255,255,255,0.5)';
-    ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText('✦',p.x+p.w/2,p.y-6);
-  }
-  if(isHome){
-    ctx.fillStyle='rgba(230,214,255,0.85)';
-    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText('START',p.x+p.w/2,p.y-8);
+  if(drawSilhouettePlatform(p,t)){
+    if(player.visited.has(p)){
+      ctx.fillStyle='rgba(255,255,255,0.45)';
+      ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+      ctx.fillText('\u2726',p.x+p.w/2,p.y-6);
+    }
   }
 }
 bootGame();

@@ -64,6 +64,8 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
+
 <script>
 // ==== LEVEL 5 — pendulum swings over the valley (gentler arcs) ====
 const LEVEL_ID='level-5';
@@ -79,8 +81,12 @@ window.SHOW_STARS = false;
 window.SHOW_MOTES = false;
 window.MUSIC_THEME = 'mountain';
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+window.LAND_STYLE = { body:'#120e1a' };
+// mono silhouette palette for the pendulum discs — golden valley dusk,
+// matching the ridge layers below instead of the old multi-colour set
+const ENV = { ink:'#1a1420', rim:'#ffd17a', rimSoft:'rgba(255,209,122,0.35)', chain:'rgba(150,120,90,0.6)' };
 
-let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+let ridgeLayers=null, leaves=null, windGusts=null, nextGustAt=0;
 
 function ridgeLine(baseY, amp, seedCount, spanW){
   // procedurally generated jagged mountain silhouette, tileable across spanW
@@ -96,8 +102,14 @@ function ridgeLine(baseY, amp, seedCount, spanW){
 
 function buildExtraSky(){
   const spanW=2400;
-  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
-  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+  // four atmospheric-perspective layers, hazy/distant to near-black/close —
+  // a proper layered vector silhouette rather than a single ridge pair
+  ridgeLayers=[
+    { pts:ridgeLine(H*0.51,H*0.16,12,spanW), depth:0.035, color:'rgba(230,205,190,0.40)', spanW },
+    { pts:ridgeLine(H*0.59,H*0.20,13,spanW), depth:0.075, color:'rgba(205,165,150,0.58)', spanW },
+    { pts:ridgeLine(H*0.68,H*0.24,12,spanW), depth:0.13,  color:'rgba(150,105,95,0.75)',  spanW },
+    { pts:ridgeLine(H*0.76,H*0.30,11,spanW), depth:0.20,  color:'rgba(80,50,55,0.92)',    spanW },
+  ];
 
   leaves=[];
   for(let i=0;i<22;i++)leaves.push({
@@ -127,8 +139,7 @@ function drawRidge(r, camX, W, H){
 }
 
 function drawExtraScenery(t){
-  drawRidge(ridgesFar, camX, W, H);
-  drawRidge(ridgesNear, camX, W, H);
+  for(const layer of ridgeLayers) drawRidge(layer, camX, W, H);
 
   // wind gusts: soft translucent streaks sweeping left to right
   if(t>=nextGustAt){
@@ -181,7 +192,7 @@ function buildLevel(){
   platforms.push(startLedge);
 
   const PEND_COUNT=PEND_TUNING.count;
-  const anchorTop=PLAY_H*0.14;
+  const anchorTop=PLAY_H*0.26;
   let prevCX=startLedge.slotCX, prevBottomY=groundY, prevHalfW=startLedge.w/2;
 
   for(let i=0;i<PEND_COUNT;i++){
@@ -265,8 +276,6 @@ function buildLevel(){
   if(!stars)buildSky();
 }
 
-const PEND_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
-
 function updatePlatforms(t){
   for(const p of platforms){
     if(p===startLedge)continue;
@@ -287,21 +296,13 @@ function updatePlatforms(t){
 
 function drawPlatform(p,t){
   const isHome=p===startLedge;
-  if(isHome){
-    const r=p.h*0.5;
-    ctx.save();ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
-    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();ctx.restore();
-    ctx.fillStyle='rgba(230,214,255,0.85)';ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText('START',p.x+p.w/2,p.y-8);
-    return;
-  }
+  if(isHome && drawGroundLand(p)) return;
 
-  const fill=PEND_COLORS[p.hue%PEND_COLORS.length];
   const cx=p.x+p.w/2, cy=p.y+p.h/2;
 
   // chain from the fixed anchor down to the platform
   ctx.save();
-  ctx.strokeStyle='rgba(90,80,70,0.85)';
+  ctx.strokeStyle=ENV.chain;
   ctx.lineWidth=Math.max(2,3*scale);
   ctx.setLineDash([5*scale,4*scale]);
   ctx.beginPath();
@@ -309,28 +310,27 @@ function drawPlatform(p,t){
   ctx.lineTo(cx, cy);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(90,80,70,0.9)';
+  ctx.fillStyle=ENV.chain;
   ctx.beginPath();ctx.arc(p.anchorX,p.anchorY,4*scale,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
   ctx.save();
   if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
-  else{ctx.shadowColor=fill;ctx.shadowBlur=14;}
-  ctx.fillStyle=fill;
+  else{ctx.shadowColor=ENV.rimSoft;ctx.shadowBlur=12;}
+  ctx.fillStyle=ENV.ink;
   ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
-  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:'rgba(255,255,255,0.8)';
-  ctx.lineWidth=Math.max(1.5,p.size*0.05);
+  // rim light keeps the near-black silhouette legible against the ridges
+  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:ENV.rim;
+  ctx.lineWidth=Math.max(1.5,p.size*0.055);
   ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.stroke();
 
   if(player.visited.has(p)){
-    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillStyle=ENV.rimSoft;ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
     ctx.fillText('✦',cx,p.y-p.size*0.28);
   }
 }
-
-bootGame();
 
 bootGame();
 </script>

@@ -17,6 +17,33 @@
     font-family:'Trebuchet MS','Segoe UI',ui-rounded,system-ui,sans-serif;
     color:#f3ecff;overscroll-behavior:none;
   }
+  .back-button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:20px;
+  padding:9px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.07);
+  color:var(--soft);
+  font-family:inherit;
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:.5px;
+  cursor:pointer;
+  transition:transform .15s, background .15s, color .15s;
+}
+
+.back-button:hover{
+  background:rgba(255,255,255,.13);
+  color:var(--cream);
+  transform:translateX(-2px);
+}
+
+.back-button:active{
+  transform:scale(.98);
+}
   body{
     background:
       radial-gradient(ellipse at 20% -10%, rgba(185,139,255,.25), transparent 55%),
@@ -105,6 +132,9 @@
 </head>
 <body>
 <div id="wrap">
+  <button class="back-button" onclick="goBack()">
+  ← Back
+</button>
   <header>
     <h1>RAGEBAIT</h1>
     <p>pick a level · progress is saved on this device</p>
@@ -181,7 +211,13 @@ function resetProgress(){
   try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
   render();
 }
-
+function goBack(){
+  if(document.referrer){
+    history.back();
+  }else{
+    window.location.href = "../index.html";
+  }
+}
 function render(){
   const progress=loadProgress();
   const list=document.getElementById('levels');

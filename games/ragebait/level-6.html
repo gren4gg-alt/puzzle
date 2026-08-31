@@ -64,6 +64,8 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
+
 <script>
 // ==== LEVEL 6 — orbit obstacles + mountain valley scenery ====
 const LEVEL_ID='level-6';
@@ -80,8 +82,12 @@ window.SHOW_STARS = false;
 window.SHOW_MOTES = false;
 window.MUSIC_THEME = 'mountain';
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
+window.LAND_STYLE = { body:'#0a140f' };
+// mono silhouette palette for the orbiters — cool ridge green, matching
+// the ridge layers below instead of the old multi-colour set
+const ENV = { ink:'#0f1a16', rim:'#a0e6be', rimSoft:'rgba(160,230,190,0.35)' };
 
-let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
+let ridgeLayers=null, leaves=null, windGusts=null, nextGustAt=0;
 
 function ridgeLine(baseY, amp, seedCount, spanW){
   // procedurally generated jagged mountain silhouette, tileable across spanW
@@ -97,8 +103,14 @@ function ridgeLine(baseY, amp, seedCount, spanW){
 
 function buildExtraSky(){
   const spanW=2400;
-  ridgesFar = { pts:ridgeLine(H*0.62, H*0.20, 14, spanW), depth:0.06, color:'rgba(150,150,190,0.55)', spanW };
-  ridgesNear= { pts:ridgeLine(H*0.72, H*0.28, 11, spanW), depth:0.14, color:'rgba(95,90,120,0.85)', spanW };
+  // four atmospheric-perspective layers, hazy/distant to near-black/close —
+  // a proper layered vector silhouette rather than a single ridge pair
+  ridgeLayers=[
+    { pts:ridgeLine(H*0.52,H*0.16,12,spanW), depth:0.035, color:'rgba(190,220,205,0.42)', spanW },
+    { pts:ridgeLine(H*0.60,H*0.20,13,spanW), depth:0.075, color:'rgba(145,190,165,0.60)', spanW },
+    { pts:ridgeLine(H*0.68,H*0.24,12,spanW), depth:0.13,  color:'rgba(90,140,115,0.78)',  spanW },
+    { pts:ridgeLine(H*0.76,H*0.30,11,spanW), depth:0.20,  color:'rgba(45,80,65,0.92)',    spanW },
+  ];
 
   leaves=[];
   for(let i=0;i<22;i++)leaves.push({
@@ -128,8 +140,7 @@ function drawRidge(r, camX, W, H){
 }
 
 function drawExtraScenery(t){
-  drawRidge(ridgesFar, camX, W, H);
-  drawRidge(ridgesNear, camX, W, H);
+  for(const layer of ridgeLayers) drawRidge(layer, camX, W, H);
 
   // wind gusts: soft translucent streaks sweeping left to right
   if(t>=nextGustAt){
@@ -191,7 +202,7 @@ function buildLevel(){
   // every orbit runs at its own speed that alignment keeps coming back
   // around, so the challenge is reading two loops and picking the moment —
   // not surviving an impossible timing window.
-  const travelTop=PLAY_H*0.22, travelBottom=PLAY_H-80;
+  const travelTop=PLAY_H*0.36, travelBottom=PLAY_H-58;
 
   for(let i=0;i<10;i++){
     const size=rand(48,58)*scale;
@@ -262,8 +273,6 @@ function buildLevel(){
   if(!stars)buildSky();
 }
 
-const ORBIT_COLORS=['#7fd4ff','#ff9e7d','#ffd166','#b98bff','#6ee7c8'];
-
 function updatePlatforms(t){
   for(const p of platforms){
     if(p===startLedge)continue;
@@ -286,26 +295,12 @@ function updatePlatforms(t){
 }
 
 function drawPlatform(p,t){
-  if(p===startLedge){
-    const r=p.h*0.5;
-    ctx.save();
-    ctx.fillStyle='rgba(255,255,255,0.07)';
-    roundRect(p.x-3,p.y+2,p.w+6,p.h+5,r);ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
-    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();
-    ctx.restore();
-    ctx.fillStyle='rgba(230,214,255,0.85)';
-    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText('START',p.x+p.w/2,p.y-8);
-    return;
-  }
+  if(p===startLedge && drawGroundLand(p)) return;
   drawOrbiter(p,t);
 }
 
 function drawOrbiter(p,t){
-  const fill=ORBIT_COLORS[p.hue%ORBIT_COLORS.length];
+  const fill=ENV.ink;
   const acx=p.anchorX, acy=p.anchorY;
 
   // faint dashed ellipse tracing the full orbit path, so the player can
@@ -324,7 +319,7 @@ function drawOrbiter(p,t){
     const trailAng=p.ang-k*0.10*Math.sign(p.angSpeed);
     const tx=acx+p.rx*Math.cos(trailAng), ty=acy+p.ry*Math.sin(trailAng);
     ctx.globalAlpha=(1-k/5)*0.22;
-    ctx.fillStyle=fill;
+    ctx.fillStyle=ENV.rim;
     ctx.beginPath();ctx.arc(tx,ty,p.size*0.28,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
@@ -339,19 +334,19 @@ function drawOrbiter(p,t){
   ctx.restore();
 
   ctx.save();
-  ctx.shadowColor=p.glitching?'#ff2e6e':fill; ctx.shadowBlur=p.glitching?(20+Math.sin(t*0.06)*10):16;
+  ctx.shadowColor=p.glitching?'#ff2e6e':ENV.rimSoft; ctx.shadowBlur=p.glitching?(20+Math.sin(t*0.06)*10):12;
   ctx.fillStyle=fill;
   ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
-  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:'rgba(255,255,255,0.85)';
-  ctx.lineWidth=Math.max(1.5,p.size*0.05);
+  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:ENV.rim;
+  ctx.lineWidth=Math.max(1.5,p.size*0.055);
   ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.stroke();
 
   ctx.restore();
 
   if(player.visited.has(p)){
-    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.fillStyle=ENV.rimSoft;
     ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
     ctx.fillText('✦',cx,p.y-p.size*0.28);
   }

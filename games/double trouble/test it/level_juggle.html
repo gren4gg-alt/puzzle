@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Duble Trouble — Keepie Uppie</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#14141c; color:#e6e6f0;
+               font-family: system-ui, -apple-system, sans-serif;
+               -webkit-user-select:none; user-select:none; }
+
+  /* ---- Three.js Background Canvas ---- */
+  #bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Replaces the old #lobby host/join screen — this page only ever
+     arrives via hand-off from the lobby (see HANDOFF CONTRACT in
+     netcode.js), so there's nothing to host/join here. Just a status
+     line while the session resumes, or an error if there's nothing to
+     resume. */
+  #boot { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+          justify-content:center; gap:10px; padding:24px; z-index:20; background:#14141c;
+          text-align:center; }
+  #boot h1 { margin:0; font-size:20px; font-weight:600; }
+  #bootStatus { font-size:13px; color:#8a8aa0; }
+
+  #ended { position:fixed; inset:0; z-index:30; display:none; flex-direction:column;
+           align-items:center; justify-content:center; gap:16px; background:rgba(20,20,28,.94);
+           text-align:center; padding:24px; }
+  #ended.on { display:flex; }
+  #endedBtn { font:inherit; padding:11px 18px; border-radius:8px; border:1px solid #3a3a4c;
+              background:#242430; color:#e6e6f0; cursor:pointer; }
+
+  #stage { position:fixed; inset:0; display:none; z-index: 1; }
+  #stage.on { display:block; }
+  canvas#game { display:block; width:100%; height:100%; touch-action:none; background: transparent; }
+  #hud { position:fixed; top:6px; left:8px; font:11px ui-monospace, monospace;
+         color:#6a6a80; pointer-events:none; z-index:5; }
+
+  #youAre { position:fixed; top:6px; left:50%; transform:translateX(-50%); z-index:5; display:none;
+            align-items:center; gap:6px; font:12px system-ui, sans-serif;
+            color:#c8c8d8; background:rgba(20,20,28,.6); padding:5px 10px;
+            border-radius:20px; pointer-events:none; }
+  #youAre.on { display:flex; }
+  #youAreSwatch { width:14px; height:14px; border-radius:4px; box-shadow:0 0 0 1px rgba(255,255,255,.25); }
+
+  /* Countdown before play begins. The host's simulation is frozen while
+     this runs (see frame()), so nothing can kill anyone during it. */
+  #countdown { position:fixed; inset:0; z-index:25; display:none;
+               flex-direction:column; align-items:center; justify-content:center;
+               gap:6px; pointer-events:none; background:rgba(14,14,21,.45); }
+  #countdown.on { display:flex; }
+  #cdNum { font:700 92px system-ui, sans-serif; color:#ffe08a;
+           text-shadow:0 4px 24px rgba(0,0,0,.7); line-height:1;
+           animation:cdPop .45s ease-out; }
+  #cdHint { font-size:14px; color:#c8c8d8; }
+  @keyframes cdPop { from { transform:scale(.55); opacity:0 } to { transform:scale(1); opacity:1 } }
+
+  /* Transient centre-screen message (death, restart, someone exited). */
+  #toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+           z-index:22; display:none; font:600 22px system-ui, sans-serif;
+           color:#e6e6f0; background:rgba(20,20,28,.82); padding:12px 22px;
+           border-radius:12px; pointer-events:none; text-align:center;
+           border:1px solid #3a3a4c; }
+  #toast.on { display:block; }
+
+  #exitProg { position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+              z-index:5; display:none; font:12px system-ui, sans-serif; color:#c8c8d8;
+              background:rgba(20,20,28,.6); padding:5px 12px; border-radius:20px;
+              pointer-events:none; }
+  #exitProg.on { display:block; }
+
+  #touch { display:none; position:fixed; inset:auto 0 0 0; z-index:10;
+           padding:0 16px 16px; justify-content:space-between; pointer-events:none; }
+  @media (pointer: coarse) { #touch { display:flex; } }
+  .pad { display:flex; gap:10px; pointer-events:auto; }
+  /* 50px is about the smallest a thumb target should go — below ~44px
+     accuracy falls off badly, and these get pressed under pressure. */
+  .tbtn { width:70px; height:70px; border-radius:50%; border:1px solid #45455e;
+          background:rgba(40,40,58,.72); color:#d8d8ea; font-size:16px;
+          display:flex; align-items:center; justify-content:center;
+          backdrop-filter: blur(3px); }
+  .tbtn.pressed { background:rgba(90,90,130,.9); }
+
+  #rotate { position:fixed; inset:0; z-index:40; display:none;
+            flex-direction:column; align-items:center; justify-content:center;
+            gap:14px; background:#14141c; text-align:center; padding:24px; }
+  #rotate span { font-size:44px; }
+  @media (pointer: coarse) and (orientation: portrait) { #rotate { display:flex; } }
+
+  /* ---- voice/settings overlay (top-right, persistent once in-game) ---- */
+  #voiceBar { position:fixed; top:6px; right:8px; z-index:60; display:none;
+              align-items:center; gap:6px; }
+  #voiceBar.on { display:flex; }
+  .vbtn { width:30px; height:30px; border-radius:50%; border:1px solid #45455e;
+          background:rgba(36,36,48,.85); color:#d8d8ea; font-size:14px; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; padding:0; }
+  .vbtn.muted { background:#5a2f36; border-color:#7a3f46; }
+  .vdots { display:flex; gap:4px; }
+  .vdot { width:8px; height:8px; border-radius:50%; background:#3a3a4c; }
+  .vdot.speaking { background:#5fd68a; box-shadow:0 0 4px #5fd68a; }
+
+  #voicePanel { position:fixed; top:44px; right:8px; z-index:15; display:none;
+                flex-direction:column; gap:10px; background:rgba(24,24,32,.95);
+                border:1px solid #3a3a4c; border-radius:10px; padding:12px; width:220px;
+                font-size:13px; }
+  #voicePanel.on { display:flex; }
+  .vrow { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .seg { display:flex; border:1px solid #3a3a4c; border-radius:6px; overflow:hidden; }
+  .seg button { font:inherit; font-size:12px; padding:5px 8px; border:none; background:#242430;
+                color:#e6e6f0; cursor:pointer; }
+  .seg button.active { background:#3a3a5c; }
+  .peerRow { display:flex; align-items:center; gap:6px; }
+  .peerRow input[type=range] { flex:1; }
+  #leaveBtn { font:inherit; padding:8px; border-radius:6px; border:1px solid #5a2f36;
+              background:#3a2226; color:#e6e6f0; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- Three.js Background Canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<div id="rotate">
+  <span>&#8635;</span>
+  <div>Rotate your device to landscape</div>
+  <div style="font-size:13px;color:#8a8aa0">This is shared-screen co-op &mdash; it needs the width.</div>
+</div>
+
+<div id="boot">
+  <h1>Duble Trouble</h1>
+  <div id="bootStatus">Resuming session…</div>
+  <button id="soloBtn" type="button" style="display:none;font:inherit;padding:11px 18px;
+    border-radius:8px;border:1px solid #3a3a4c;background:#242430;color:#e6e6f0;cursor:pointer;">
+    Test solo (no lobby)
+  </button>
+</div>
+
+<div id="ended">
+  <div style="font-size:18px;font-weight:600" id="endedMsg">Session ended</div>
+  <button id="endedBtn">Back</button>
+</div>
+
+<div id="stage">
+  <canvas id="game"></canvas>
+</div>
+<div id="hud"></div>
+<div id="countdown"><div id="cdNum">3</div><div id="cdHint">Get ready…</div></div>
+<div id="toast"></div>
+<div id="exitProg"></div>
+<div id="youAre"><span id="youAreSwatch"></span><span>You</span></div>
+
+<div id="voiceBar">
+  <div class="vdots" id="voiceDots"></div>
+  <button class="vbtn" id="selfMuteBtn" type="button" aria-label="Mute microphone">&#127908;</button>
+  <button class="vbtn" id="settingsBtn" type="button" aria-label="Voice settings">&#9881;</button>
+</div>
+<div id="voicePanel">
+  <div class="vrow">
+    <span>Voice mode</span>
+    <div class="seg" id="modeSwitch">
+      <button type="button" data-mode="always">Always on</button>
+      <button type="button" data-mode="ptt">Push (V)</button>
+    </div>
+  </div>
+  <div id="peerList"></div>
+  <button id="leaveBtn" type="button">Leave session</button>
+</div>
+
+<div id="touch">
+  <div class="pad">
+    <div class="tbtn" id="btnLeft">&#9664;</div>
+    <div class="tbtn" id="btnRight">&#9654;</div>
+  </div>
+  <div class="pad">
+    <div class="tbtn" id="btnAction">&#9995;</div>
+    <div class="tbtn" id="btnJump">&#9650;</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="engine.js"></script>
+<script src="input.js"></script>
+
+<!-- ==========================================================================
+     Three.js Atmospheric Dark Valley Background Setup (Violet Grass Accent)
+     ========================================================================== -->
+<script>
+(function() {
+  "use strict";
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // Create background particles (stars / dust)
+  const particleCount = 40;
+  const particles = [];
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2.5 + 0.5,
+      speed: Math.random() * 0.4 + 0.1, // Horizontal drift speed
+      opacity: Math.random() * 0.7 + 0.3
+    });
+  }
+
+  function animateBG() {
+    requestAnimationFrame(animateBG);
+
+    // Deep twilight background gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#141026');
+    grad.addColorStop(1, '#0d0b18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Update and draw moving particles
+    ctx.fillStyle = '#b19cd9'; // Soft violet tint to match your game vibe
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      
+      // Move particle to the left
+      p.x -= p.speed;
+      
+      // If it goes off-screen, wrap it back around to the right
+      if (p.x < 0) {
+        p.x = canvas.width;
+        p.y = Math.random() * canvas.height;
+      }
+
+      ctx.globalAlpha = p.opacity;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1.0; // Reset alpha
+  }
+
+  animateBG();
+})();
+</script>
+<!-- ==========================================================================
+     Level: Keepie Uppie — inlined here in place of level.js.
+
+     THE GAME
+       The arena is a stack of horizontal corridors, one lane per player.
+       Everyone starts at the left of their own lane with a ball already in
+       the air above their head, and has to walk it all the way to the exit
+       on the right WITHOUT letting it touch the lane floor. The ball only
+       goes back up when it lands on your head, so the whole run is a series
+       of small positioning corrections while moving.
+
+       One dropped ball ends it for EVERYONE — the lanes are separate but
+       the failure is shared, which is the only thing making this co-op
+       rather than four people playing solo next to each other.
+
+     WHERE THE LANE COUNT COMES FROM
+       One lane per player, decided BEFORE the arena is built. It cannot be
+       read from nw.players, because Level.build() runs before any Player
+       exists — and it must not be guessed differently on the two sides,
+       because the static entity ids only line up if host and client build
+       the same slabs in the same order. So both sides read the SAME agreed
+       number, from the same places, in this order:
+
+         1. ?lanes=N in the URL           (testing, and the solo button)
+         2. dt-session .players           (what the lobby hands off)
+         3. DEFAULT_LANES                 (last resort)
+
+       See LANE COUNT SOURCES below for the one small thing the lobby has
+       to write for step 2 to work.
+
+     EVERYTHING POSITIONAL IS IN THE CONFIG BLOCK BELOW.
+     ========================================================================== -->
+<script>
+(function () {
+"use strict";
+
+const { StaticBody, TriggerZone, BouncingBall } = window.Engine;
+const P = window.Engine.PHYSICS;
+
+/* ======================================================================
+   ARENA CONFIG
+   ====================================================================== */
+const DEFAULT_LANES = 2;       // only used when nothing else says otherwise
+const MIN_LANES = 1, MAX_LANES = 8;   // MAX matches netcode's MAX_PLAYERS
+const LANE_LEN   = 1300;       // inside length of a corridor, left to right
+const LANE_H     = 200;        // inside height: player 40 + room for the arc
+const WALL       = 13;         // thickness of every floor/ceiling/end wall
+const MARGIN     = 24;         // border around the whole stack
+
+/* ======================================================================
+   BALL CONFIG — the feel of the juggle lives here.
+   ====================================================================== */
+const BALL_D        = 26;
+const BALL_GRAVITY  = 1150;    // softer than the player's 1700: more hang time
+const BOUNCE_V      = 440;     // upward speed off a head — sets the arc height
+const CEIL_DAMP     = 0.4;    // energy kept when it smacks the ceiling
+const STEER         = 5;     // how hard an off-centre header sends it sideways
+const BALL_MAX_VX   = 210;     // and the cap, so it can never outrun the player
+const WALL_DAMP     = 0.8;     // energy kept off an end wall
+const START_HEIGHT  = 150;     // how high above the head the ball starts
+
+const GAMEOVER_SECS = 0.5;     // how long the GAME OVER card holds before reset
+
+const LAND_COLOR = '#8a5fbd';
+const LANE_COLOR = '#a778d6';
+const GOAL_COLOR = '#f0c419';
+const VIEW_MODE  = 'whole';
+
+/* ======================================================================
+   LANE COUNT SOURCES
+   Both sides run this, and both must land on the same number or the arena
+   they build won't match and every synced entity id will be off by a slab.
+   That is why nothing here looks at the live player list.
+
+   For source 2 the lobby needs to put the party size into the hand-off blob
+   it already writes — one extra field, `players`, on BOTH the host and the
+   client shape:
+       {role:'host',   roomCode, hostSnapshot, players: N}
+       {role:'client', roomCode, token, level,  players: N}
+   netcode.js ignores unknown fields, so adding it is safe. Until the lobby
+   does, ?lanes=N and DEFAULT_LANES cover it.
+   ====================================================================== */
+function resolveLaneCount() {
+  let n = null;
+
+  // 1. URL — wins over everything, so a test link can force a layout.
+  try {
+    const q = new URLSearchParams(location.search).get('lanes');
+    if (q) n = parseInt(q, 10);
+  } catch (e) {}
+
+  // 2. The hand-off blob. Both roles read their own copy of the same
+  //    number the lobby agreed on, so both build the same arena.
+  if (!n) {
+    try {
+      const sess = JSON.parse(sessionStorage.getItem('dt-session') || 'null');
+      if (sess && sess.players) n = parseInt(sess.players, 10);
+    } catch (e) {}
+  }
+
+  if (!n || !isFinite(n)) n = DEFAULT_LANES;
+  return Math.max(MIN_LANES, Math.min(MAX_LANES, n | 0));
+}
+const LANE_COUNT = resolveLaneCount();
+
+/* ---- Derived geometry — nothing below is hand-typed ------------------- */
+const LANE_PITCH  = LANE_H + WALL;                       // floor-to-floor
+const ARENA_W     = MARGIN * 2 + WALL * 2 + LANE_LEN;
+const ARENA_H     = MARGIN * 2 + WALL + LANE_COUNT * LANE_PITCH;
+const laneInnerY  = i => MARGIN + WALL + i * LANE_PITCH;  // ceiling underside
+const laneFloorY  = i => laneInnerY(i) + LANE_H;          // floor top surface
+const LANE_X      = MARGIN + WALL;
+
+const IS_HOST = (function () {
+  try {
+    const raw = sessionStorage.getItem('dt-session');
+    if (!raw) return true;
+    return (JSON.parse(raw).role || 'host') !== 'client';
+  } catch (e) { return true; }
+})();
+
+const NC = window.Netcode || {};
+const RELAY_OK = IS_HOST
+  ? typeof (NC.Host && NC.Host.broadcastLevelMsg) === 'function'
+  : typeof (NC.Client && NC.Client.sendLevelMsg) === 'function';
+
+/* ---- The ball ---------------------------------------------------------
+   Subclasses BouncingBall so netcode's codec syncs it by instanceof, colour
+   included — a ball is tinted to its owner so a glance at another lane
+   tells you whose is about to drop. Every movement method is stubbed: the
+   engine's own bounce solver would fight the head-bounce rules below, so
+   the level tick drives all of it.
+   -------------------------------------------------------------------- */
+const NOOP = function () {};
+class Ball extends BouncingBall {
+  constructor(x, y, color) {
+    super(x, y, BALL_D, BALL_D, {
+      vx: 0, vy: 0, friction: 0, minSpeed: 0, killsPlayers: false, color: color,
+    });
+    this.solid = false;
+    this.kind = 'juggle';
+  }
+}
+Ball.prototype.update = NOOP; Ball.prototype.step = NOOP; Ball.prototype.tick = NOOP;
+Ball.prototype.simulate = NOOP; Ball.prototype.integrate = NOOP;
+
+// Shared HUD state: host writes it from the real game, a client writes it
+// from the host's broadcasts, the overlay reads it without caring which.
+const HUD = { over: false, msg: '', done: 0, total: 0, crowded: false, lanes: 0 };
+window.LevelJuggle = { hud: HUD, LANE_COUNT: LANE_COUNT };
+
+window.Level = {
+  WIDTH: ARENA_W,
+  HEIGHT: ARENA_H,
+  VIEW_MODE: VIEW_MODE,
+
+  // One lane each, at the far left of it. If more players turn up than the
+  // agreed lane count, the extras wrap and share a lane rather than
+  // spawning inside a wall — playable, but the HUD says so (see below).
+  spawnPoint(slot) {
+    const lane = slot % LANE_COUNT;
+    return { x: LANE_X + 40, y: laneFloorY(lane) - 40 };
+  },
+
+  build(world, nw) {
+    // Nobody can fall out of a sealed corridor, and there is no pit here —
+    // the only way to lose is the ball. Keep the fall-out check well clear.
+    world.deathY = ARENA_H + 400;
+    world.cameraOpts = { viewW: 1100, viewH: 620 };
+
+    function slab(x, y, w, h, color) {
+      const b = new StaticBody(x, y, w, h);
+      b.color = color || LAND_COLOR;
+      world.add(b);
+      return b;
+    }
+
+    /* ---- The stack -----------------------------------------------------
+       Each lane is a closed box: its own ceiling, its own floor, and end
+       walls both sides. Consecutive lanes share a slab — one lane's floor
+       is the next lane's ceiling — so the stack is (LANE_COUNT + 1)
+       horizontal slabs, not two per lane.
+       ------------------------------------------------------------------ */
+    const goals = [];
+    const lanes = [];
+
+    for (let i = 0; i <= LANE_COUNT; i++) {
+      slab(MARGIN, MARGIN + i * LANE_PITCH, WALL * 2 + LANE_LEN, WALL);
+    }
+    for (let i = 0; i < LANE_COUNT; i++) {
+      slab(MARGIN, laneInnerY(i), WALL, LANE_H);                       // left end
+      slab(MARGIN + WALL + LANE_LEN, laneInnerY(i), WALL, LANE_H);     // right end
+
+      lanes.push({
+        top:    laneInnerY(i),
+        floor:  laneFloorY(i),
+        left:   LANE_X,
+        right:  LANE_X + LANE_LEN,
+      });
+
+      // Exit doorway at the far right of the lane, standing on its floor.
+      const gh = 90, gw = 64;
+      const goal = new TriggerZone(LANE_X + LANE_LEN - gw - 10, laneFloorY(i) - gh,
+                                   gw, gh, { effect: 'goal', kind: 'exit' });
+      goal.color = GOAL_COLOR;
+      world.add(goal);
+      nw.triggers.push(goal);
+      goals.push(goal);
+    }
+
+    world.levelBounds = { minX: 0, minY: 0, maxX: ARENA_W, maxY: ARENA_H };
+
+    // 'each' — every player has their own door and has to go through it,
+    // so the level ends when the last lane is finished.
+    nw.winCondition = { type: 'reach-goal', mode: 'each', goals: goals };
+
+    /* ---- Pause --------------------------------------------------------- */
+    let paused = false, pausedMirror = false;
+    window.LevelPause = {
+      isPaused: function () { return IS_HOST ? paused : pausedMirror; },
+      toggle: function () {
+        if (IS_HOST) {
+          paused = !paused;
+          if (RELAY_OK) { try { NC.Host.broadcastLevelMsg({ k: 'pause', on: paused }); } catch (e) {} }
+        } else if (RELAY_OK) {
+          try { NC.Client.sendLevelMsg({ k: 'pauseReq' }); } catch (e) {}
+        }
+      },
+    };
+    if (RELAY_OK && IS_HOST) {
+      NC.Host.onLevelMsg = function (slot, payload) {
+        if (payload && payload.k === 'pauseReq') {
+          paused = !paused;
+          try { NC.Host.broadcastLevelMsg({ k: 'pause', on: paused }); } catch (e) {}
+        }
+      };
+    } else if (RELAY_OK) {
+      NC.Client.onLevelMsg = function (payload) {
+        if (!payload) return;
+        if (payload.k === 'pause') pausedMirror = !!payload.on;
+        else if (payload.k === 'st') {
+          HUD.over = !!payload.o; HUD.msg = payload.m || '';
+          HUD.done = payload.d || 0; HUD.total = payload.n || 0;
+          HUD.crowded = !!payload.c; HUD.lanes = payload.l || 0;
+        }
+      };
+    }
+
+    /* ================= HOST-ONLY GAME STATE ============================ */
+    const balls = new Map();     // slot -> Ball
+    let overTimer = 0;           // > 0 while the GAME OVER card is up
+    let message = '';
+    let netAccum = 0;
+    let lastGen = world.resetGeneration;
+
+    function clearBalls() {
+      for (const b of balls.values()) world.remove(b);
+      balls.clear();
+    }
+
+    function laneOf(slot) { return lanes[slot % LANE_COUNT]; }
+
+    // A ball is served directly above its owner, already falling — so the
+    // very first thing a player does is a header, not a wait.
+    function serve(slot, p) {
+      const lane = laneOf(slot);
+      const y = Math.max(lane.top + 2, p.y - START_HEIGHT);
+      const b = new Ball(p.x + p.w / 2 - BALL_D / 2, y, p.color);
+      world.add(b);
+      balls.set(slot, b);
+    }
+
+    function broadcast() {
+      HUD.over = overTimer > 0; HUD.msg = message; HUD.lanes = LANE_COUNT;
+      if (!RELAY_OK || !IS_HOST) return;
+      try {
+        NC.Host.broadcastLevelMsg({
+          k: 'st', o: overTimer > 0, m: message, d: HUD.done, n: HUD.total,
+          c: !!HUD.crowded, l: LANE_COUNT,
+        });
+      } catch (e) {}
+    }
+
+    const engineStep = world.step.bind(world);
+    world.step = function (dt) {
+      if (IS_HOST && paused) return;
+
+      // While the GAME OVER card is up the world is frozen too — the run is
+      // already lost, and letting players keep walking behind the card just
+      // makes the reset look like a teleport.
+      if (IS_HOST && overTimer > 0) {
+        overTimer -= dt;
+        if (overTimer <= 0) {
+          overTimer = 0;
+          message = '';
+          world.pendingReset = true;   // the reset branch below re-serves
+        }
+        broadcast();
+        return;
+      }
+
+      engineStep(dt);
+      if (!IS_HOST || !(dt > 0)) return;
+
+      // A reset — a drop, or a player leaving — clears the board. Balls are
+      // created after build(), so resetLevel() knows nothing about them.
+      if (world.resetGeneration !== lastGen) {
+        lastGen = world.resetGeneration;
+        clearBalls();
+      }
+
+      const live = [];
+      for (const [slot, p] of nw.players) {
+        if (p && !p.dead && !p.removed) live.push([slot, p]);
+      }
+      HUD.total = live.length;
+      // The arena was sized before anyone existed. If the party turned out
+      // bigger than the number we built for, say so plainly rather than
+      // letting two players quietly share a lane and blame each other for
+      // the drop.
+      HUD.crowded = live.length > LANE_COUNT;
+
+      // Serve to anyone who has no ball — first frame of a run, a late
+      // joiner, or the frame after a reset.
+      for (let i = 0; i < live.length; i++) {
+        if (!balls.has(live[i][0])) serve(live[i][0], live[i][1]);
+      }
+      // And retire balls whose owner has gone through their door or left.
+      for (const slot of Array.from(balls.keys())) {
+        if (!nw.players.has(slot)) { world.remove(balls.get(slot)); balls.delete(slot); }
+      }
+
+      for (let i = 0; i < live.length; i++) {
+        const slot = live[i][0], p = live[i][1];
+        const b = balls.get(slot);
+        if (!b) continue;
+        const lane = laneOf(slot);
+
+        // --- gravity and travel ---
+        b.vy += BALL_GRAVITY * dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        // --- end walls ---
+        if (b.x < lane.left) { b.x = lane.left; b.vx = Math.abs(b.vx) * WALL_DAMP; }
+        if (b.x + b.w > lane.right) { b.x = lane.right - b.w; b.vx = -Math.abs(b.vx) * WALL_DAMP; }
+
+        // --- ceiling ---
+        if (b.y < lane.top) { b.y = lane.top; b.vy = Math.abs(b.vy) * CEIL_DAMP; }
+
+        /* --- the header -------------------------------------------------
+           Only counts on the way DOWN and only against the top band of the
+           player's box, so walking sideways into a low ball doesn't punt it
+           — the ball has to actually land on the head. How far off-centre
+           it lands is what steers it, which is the whole skill of the
+           level: you correct a drifting ball by shifting under it.
+           -------------------------------------------------------------- */
+        const headTop = p.y;
+        const overlapX = (b.x + b.w > p.x) && (b.x < p.x + p.w);
+        const onHead = overlapX && b.vy > 0 &&
+                       (b.y + b.h) >= headTop && (b.y + b.h) <= headTop + 18;
+        if (onHead) {
+          b.y = headTop - b.h;
+          b.vy = -BOUNCE_V;
+          const off = (b.x + b.w / 2) - (p.x + p.w / 2);
+          b.vx += off * STEER;
+          if (b.vx > BALL_MAX_VX) b.vx = BALL_MAX_VX;
+          if (b.vx < -BALL_MAX_VX) b.vx = -BALL_MAX_VX;
+        }
+
+        // --- the floor: one drop ends it for everyone -------------------
+        if (b.y + b.h >= lane.floor) {
+          b.y = lane.floor - b.h;
+          b.vy = 0; b.vx = 0;
+          message = 'Ball dropped in lane ' + ((slot % LANE_COUNT) + 1) + ' — GAME OVER';
+          overTimer = GAMEOVER_SECS;
+          broadcast();
+          return;
+        }
+      }
+
+      netAccum += dt;
+      if (netAccum >= 0.25) { netAccum = 0; broadcast(); }
+    };
+  },
+};
+
+})();
+</script>
+
+<!-- ==========================================================================
+     Keepie Uppie controls + HUD — Back and Pause in the same #voiceBar .vbtn
+     style, the shared GAME OVER card, and the shared pause panel.
+     ========================================================================== -->
+<script>
+(function () {
+"use strict";
+
+function mkVbtn(glyph, label, onclick) {
+  const b = document.createElement('button');
+  b.className = 'vbtn'; b.type = 'button';
+  b.innerHTML = glyph; b.title = label;
+  b.setAttribute('aria-label', label);
+  b.onclick = onclick;
+  return b;
+}
+
+const bar = document.getElementById('voiceBar');
+if (!bar) return;
+
+const pauseBtn = mkVbtn('&#10074;&#10074;', 'Pause', function () {
+  if (window.LevelPause) window.LevelPause.toggle();
+});
+const back = mkVbtn('&#8592;', 'Leave the level', function () {
+  try { window.Netcode.Host.prepareHandoff(); } catch (e) {}
+  location.href = 'index.html';
+});
+bar.appendChild(pauseBtn);
+bar.appendChild(back);
+
+function centreCard(html, bg) {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'position:fixed;inset:0;z-index:62;display:none;align-items:center;' +
+    'justify-content:center;background:' + bg + ';backdrop-filter:blur(3px);' +
+    'font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center;';
+  el.innerHTML =
+    '<div style="padding:24px 44px;border-radius:16px;background:rgba(24,19,34,.95);' +
+    'border:1px solid rgba(255,255,255,.16);color:#e9e3f2">' + html + '</div>';
+  document.body.appendChild(el);
+  return el;
+}
+
+/* GAME OVER is shown to EVERY player, not just whoever dropped: the lanes
+   are separate, so without this the other three would just see themselves
+   snap back to the start with no explanation. */
+const overEl = centreCard(
+  '<div style="font:700 34px/1.1 inherit;color:#ff8a7a;letter-spacing:.04em">GAME OVER</div>' +
+  '<div id="overWhy" style="margin-top:8px;font-size:14px;color:#c9c1dd"></div>' +
+  '<div style="margin-top:6px;font-size:12px;color:#a79fbd">One dropped ball ends the run for everyone.</div>',
+  'rgba(30,10,14,.6)');
+
+const pauseEl = centreCard(
+  '<div style="font:700 30px/1.1 inherit;letter-spacing:.04em">GAME IS PAUSED</div>' +
+  '<div style="margin-top:8px;font-size:13px;color:#a79fbd">' +
+  'Paused for everyone &mdash; press &#10074;&#10074; again to resume.</div>',
+  'rgba(14,11,24,.55)');
+pauseEl.style.zIndex = '63';
+
+/* Sharing a lane is survivable but confusing, so it is called out rather
+   than left for the players to work out mid-drop. */
+const crowdEl = document.createElement('div');
+crowdEl.style.cssText =
+  'position:fixed;bottom:44px;left:50%;transform:translateX(-50%);z-index:59;' +
+  'display:none;padding:6px 14px;border-radius:999px;background:rgba(58,34,20,.9);' +
+  'border:1px solid rgba(255,180,120,.35);color:#ffd9b0;pointer-events:none;' +
+  'font:500 12px/1 system-ui,-apple-system,Segoe UI,sans-serif;';
+document.body.appendChild(crowdEl);
+
+(function loop() {
+  try {
+    const p = window.LevelPause && window.LevelPause.isPaused();
+    pauseEl.style.display = p ? 'flex' : 'none';
+    pauseBtn.style.opacity = p ? '0.65' : '1';
+
+    const h = window.LevelJuggle && window.LevelJuggle.hud;
+    if (h) {
+      overEl.style.display = h.over ? 'flex' : 'none';
+      crowdEl.style.display = h.crowded ? 'block' : 'none';
+      if (h.crowded) {
+        crowdEl.textContent = h.total + ' players but only ' + (h.lanes || '?') +
+                              ' lanes — some of you are sharing.';
+      }
+      const why = document.getElementById('overWhy');
+      if (why) why.textContent = h.msg || '';
+    }
+  } catch (e) {}
+  requestAnimationFrame(loop);
+})();
+
+window.addEventListener('keydown', function (ev) {
+  if (ev.code === 'Escape' || ev.code === 'KeyP') {
+    if (window.LevelPause) window.LevelPause.toggle();
+  }
+});
+
+})();
+</script>
+
+<script src="netcode.js"></script>
+<script src="character.js"></script>
+<script src="progress.js"></script>
+<script src="levels.js"></script>
+<script src="voicechat.js"></script>
+<script src="voicechat-adapter.js"></script>
+
+<script>
+"use strict";
+(function () {
+
+const { Host, Client, CFG, PALETTE } = window.Netcode;
+const { Box, Player } = window.Engine;
+
+const $ = id => document.getElementById(id);
+
+// Where "back to lobby" goes. Relative to this page — adjust if level
+// pages ever move into a subfolder relative to the lobby.
+const LOBBY_URL = 'lobby.html';
+const boot = $('boot'), bootStatus = $('bootStatus'), stage = $('stage'),
+      hudEl = $('hud'), canvas = $('game');
+const ctx = canvas.getContext('2d');
+
+const setStatus = m => { bootStatus.textContent = m; };
+
+const input = new window.InputManager();
+window.bindTouchButton($('btnLeft'),   input, 'left');
+window.bindTouchButton($('btnRight'),  input, 'right');
+window.bindTouchButton($('btnJump'),   input, 'jump');
+window.bindTouchButton($('btnAction'), input, 'action');
+
+let side = null, peer = null, running = false, myPeerId = null;
+
+// Matches the (pointer: coarse) media query that reveals #touch, so the
+// view lift and the buttons can never disagree about whether the pad is
+// on screen.
+const TOUCH_UI = window.matchMedia('(pointer: coarse)').matches;
+// How far up the world is nudged to clear the control pad, in screen px.
+const TOUCH_VIEW_LIFT = 40;
+
+const animStates = new WeakMap();
+let lastFrameAt = performance.now();
+
+let scale = 1, offX = 0, offY = 0;
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = window.innerWidth, ch = window.innerHeight;
+  canvas.width = cw * dpr; canvas.height = ch * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/* ---------- view rect ----------
+   The region of level-space the window shows. In 'whole' mode that's the
+   entire level (the original letterbox behaviour). In 'follow' mode it's
+   engine.js's Camera, which already tracks the average of the live
+   players and is clamped to levelBounds — it was being simulated and
+   synced all along (nw.cameras[0], a static-lifecycle entry in netcode's
+   TYPE_REGISTRY with blended x/y), it just was never rendered through.
+   Reading it rather than recomputing a follow point locally means host
+   and clients frame the shot identically, and the camera's collision
+   walls line up with what you can actually see. */
+function viewRect() {
+  if (window.Level.VIEW_MODE === 'follow' && side && side.nw &&
+      side.nw.cameras && side.nw.cameras[0]) {
+    const c = side.nw.cameras[0];
+    return { x: c.x, y: c.y, w: c.w, h: c.h };
+  }
+  return { x: 0, y: 0, w: window.Level.WIDTH, h: window.Level.HEIGHT };
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+
+// ---- mobile fullscreen on rotate --------------------------------------
+// Touch devices only. Turning to landscape goes fullscreen (the browser
+// chrome eats a lot of the width this shared-screen level needs);
+// turning back to portrait, or leaving fullscreen by any other route,
+// puts the device back exactly how it was.
+//
+// The catch: requestFullscreen() needs a user gesture, and an
+// orientationchange event does NOT count as one in Chrome/Firefox. So
+// when the direct attempt is rejected we arm a one-shot listener and go
+// fullscreen on the player's very next touch instead — which in practice
+// is immediate, since they rotated in order to play. iOS Safari on
+// iPhone has no element fullscreen at all; there the promise rejects,
+// the armed touch also fails, and nothing breaks — the page just stays
+// as it is. webkitRequestFullscreen is included for iPad and older
+// WebKit.
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+const isLandscape = () => window.matchMedia('(orientation: landscape)').matches;
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+
+// What the orientation lock was before we touched it, so exiting can put
+// it back rather than just guessing 'portrait'. null = never locked.
+let priorOrientation = null;
+let armed = false;
+
+function lockLandscape() {
+  const o = screen.orientation;
+  if (!o || typeof o.lock !== 'function') return;
+  if (priorOrientation === null) priorOrientation = o.type || null;
+  // Rejects on desktop and on browsers that gate it — harmless either way.
+  o.lock('landscape').catch(() => {});
+}
+
+function restoreOrientation() {
+  const o = screen.orientation;
+  if (o && typeof o.unlock === 'function' && priorOrientation !== null) {
+    try { o.unlock(); } catch (e) {}
+  }
+  priorOrientation = null;
+}
+
+function armGesture() {
+  if (armed) return;
+  armed = true;
+  const go = () => {
+    armed = false;
+    window.removeEventListener('pointerdown', go);
+    window.removeEventListener('touchend', go);
+    if (isLandscape()) enterFullscreen();
+  };
+  window.addEventListener('pointerdown', go, { once: true });
+  window.addEventListener('touchend', go, { once: true });
+}
+
+function enterFullscreen() {
+  if (!isTouch || fsEl()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  let p;
+  try { p = req.call(el, { navigationUI: 'hide' }); } catch (e) { p = null; }
+  if (p && typeof p.then === 'function') {
+    p.then(lockLandscape).catch(armGesture);
+  } else {
+    // Older WebKit returns undefined rather than a promise.
+    lockLandscape();
+  }
+}
+
+function exitFullscreen() {
+  restoreOrientation();
+  if (!fsEl()) return;
+  const ex = document.exitFullscreen || document.webkitExitFullscreen;
+  if (ex) { try { ex.call(document); } catch (e) {} }
+}
+
+function syncFullscreenToOrientation() {
+  if (!isTouch) return;
+  if (isLandscape()) enterFullscreen();
+  else exitFullscreen();
+}
+
+if (isTouch) {
+  window.addEventListener('orientationchange', () => setTimeout(syncFullscreenToOrientation, 150));
+  // orientationchange is deprecated and missing on some Android builds;
+  // the media query fires reliably there. Both routes are idempotent.
+  const mq = window.matchMedia('(orientation: landscape)');
+  const onMq = () => syncFullscreenToOrientation();
+  if (mq.addEventListener) mq.addEventListener('change', onMq);
+  else if (mq.addListener) mq.addListener(onMq);
+
+  // Leaving fullscreen by any other route — swipe-down, back button, Esc
+  // — must also release the orientation lock, or the device stays stuck
+  // in landscape after the player has left the game.
+  const onFsChange = () => { if (!fsEl()) restoreOrientation(); setTimeout(resize, 60); };
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+
+  // Already sideways when the page opened.
+  if (isLandscape()) armGesture();
+}
+
+// Previous on-screen position per entity, so an arrow's heading can be
+// derived from its actual movement. Clients never receive velocity (see
+// netcode.js's Codec), so this is the only way to know which way a
+// projectile is pointing there — same technique character.js already
+// uses for its own velocity fallback. WeakMap so despawned projectiles
+// clean themselves up.
+const lastPos = new WeakMap();
+
+function roundRect(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x,     y + h, rr);
+  ctx.arcTo(x,     y + h, x,     y,     rr);
+  ctx.arcTo(x,     y,     x + w, y,     rr);
+  ctx.closePath();
+}
+
+// A real arrow: shaft + head + fletching, rotated to face its heading.
+function drawArrow(x, y, w, h, angle) {
+  const cx = x + w / 2, cy = y + h / 2;
+  const len = Math.max(w, h);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  // shaft
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-len / 2, 0);
+  ctx.lineTo(len / 2 - 5, 0);
+  ctx.stroke();
+
+  // head
+  ctx.fillStyle = '#ffe08a';
+  ctx.beginPath();
+  ctx.moveTo(len / 2, 0);
+  ctx.lineTo(len / 2 - 7, -4.5);
+  ctx.lineTo(len / 2 - 7, 4.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // fletching
+  ctx.strokeStyle = '#e2554f';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-len / 2, 0);      ctx.lineTo(-len / 2 + 6, -4);
+  ctx.moveTo(-len / 2, 0);      ctx.lineTo(-len / 2 + 6, 4);
+  ctx.moveTo(-len / 2 + 3, 0);  ctx.lineTo(-len / 2 + 9, -4);
+  ctx.moveTo(-len / 2 + 3, 0);  ctx.lineTo(-len / 2 + 9, 4);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function draw() {
+  const now = performance.now();
+  const animDt = Math.min(0.05, (now - lastFrameAt) / 1000);
+  lastFrameAt = now;
+  const t = now / 1000;
+
+
+  const W = window.Level.WIDTH, H = window.Level.HEIGHT;
+  const view = viewRect();
+  const cw = window.innerWidth, ch = window.innerHeight;
+  // Fill the window in follow mode (max, so no letterbox bars around a
+  // small camera rect); fit the whole thing in whole-level mode (min).
+  scale = window.Level.VIEW_MODE === 'follow'
+    ? Math.max(cw / view.w, ch / view.h)
+    : Math.min(cw / view.w, ch / view.h);
+  offX = (cw - view.w * scale) / 2;
+  offY = (ch - view.h * scale) / 2;
+
+  // On touch devices the control pad occupies the bottom strip of the
+  // window, and the action is at ground level — so a centred view puts
+  // the players right behind the buttons. Shift the whole view up by
+  // roughly half the pad's height: the characters clear the buttons, and
+  // the extra room opens up above them, where the arrows come from.
+  // Screen-space, applied after scale, so it's a constant number of
+  // pixels regardless of how far the camera is zoomed.
+  if (TOUCH_UI) offY -= TOUCH_VIEW_LIFT;
+
+  ctx.save();
+  ctx.setTransform(canvas.width / cw, 0, 0, canvas.height / ch, 0, 0);
+  
+  // Clear canvas so the 3D Three.js background shows through
+  ctx.clearRect(0, 0, cw, ch);
+  
+  ctx.translate(offX, offY);
+  ctx.scale(scale, scale);
+  ctx.translate(-view.x, -view.y);
+
+  const list = side.renderList();
+
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i].entity;
+    if (!e.isWindZone) continue;
+    ctx.fillStyle = e.color;
+    ctx.fillRect(list[i].x, list[i].y, e.w, e.h);
+  }
+
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i], e = it.entity;
+    if (e.isWindZone) continue;
+    // Camera boundary walls are invisible collision helpers, not scenery
+    // (engine.js sets isCameraWall on them) — drawing them is what put
+    // those stray rectangles on screen.
+    if (e.isCameraWall) continue;
+    const x = it.x, y = it.y;
+
+    if (e instanceof Player) {
+      let anim = animStates.get(e);
+      if (!anim) { anim = window.Character.createAnimState(); animStates.set(e, anim); }
+      const vx = (side === Host) ? e.vx : undefined;
+      const vy = (side === Host) ? e.vy : undefined;
+      // engine.js sets `dead` on the player and syncs it (see Player's
+      // snapshot contract) — character.js has a dead pose, so pass the
+      // real flag through rather than a hardcoded false.
+      window.Character.update(anim, animDt, {
+        x, y, vx, vy, facing: e.facing, grounded: e.grounded, dead: !!e.dead,
+      });
+      window.Character.draw(ctx, anim, { x, y, w: e.w, h: e.h, color: e.color });
+
+    } else if (e.isProjectile || e.kind === 'arrow') {
+      const prev = lastPos.get(e);
+      let angle = Math.PI / 2; // falling straight down until we have a delta
+      if (prev) {
+        const dx = x - prev.x, dy = y - prev.y;
+        if (dx * dx + dy * dy > 0.01) angle = Math.atan2(dy, dx);
+        else if (prev.angle !== undefined) angle = prev.angle;
+      }
+      lastPos.set(e, { x, y, angle });
+      drawArrow(x, y, e.w, e.h, angle);
+
+    } else if (e.kind === 'juggle') {
+      // A real ball: lit from the upper left, with a soft contact shadow on
+      // the lane floor so its height above the ground is readable at a
+      // glance — which is the one thing the player is judging all level.
+      const cx = x + e.w / 2, cy = y + e.h / 2, r = e.w / 2;
+      ctx.save();
+      const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.15, cx, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,0.85)');
+      g.addColorStop(0.35, e.color);
+      g.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+
+    } else if (e.kind === 'death-orb') {
+      // Drawn as a sibling of the decorative orb (same size, same bob) so
+      // it doesn't announce itself as a hazard from across the level —
+      // only the colour differs, and you have to get close to read it.
+      // Host and client both run this Level.build(), so `kind` is set
+      // locally on both sides and this branch is reached identically.
+      const cx = x + e.w / 2, cy = y + e.h / 2 + 3 * Math.sin(t * 2 + x * 0.05);
+      const pulse = 0.5 + 0.5 * Math.sin(t * 3.4);
+      ctx.save();
+      ctx.shadowColor = 'rgba(217,79,79,0.9)';
+      ctx.shadowBlur = 10 + 10 * pulse;
+      ctx.fillStyle = 'rgba(217,79,79,' + (0.6 + 0.35 * pulse) + ')';
+      ctx.beginPath(); ctx.arc(cx, cy, e.w / 2, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,220,220,0.85)';
+      ctx.beginPath(); ctx.arc(cx, cy, e.w / 5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+    } else if (e.kind === 'fire') {
+      // Flickering flame: a warm core with irregular tongues, animated with
+      // layered noise-ish sine terms so no two frames repeat exactly.
+      const cx = x + e.w / 2, cy = y + e.h / 2, r = e.w / 2;
+      const flick = t * 14 + x * 0.1;
+      ctx.save();
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 12 + 6 * Math.sin(t * 9 + x);
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      for (let k = 0; k <= 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        const wobble = 1 + 0.28 * Math.sin(flick + a * 3) + 0.12 * Math.sin(flick * 1.7 - a * 5);
+        const px = cx + Math.cos(a) * r * wobble;
+        const py = cy + Math.sin(a) * r * wobble * 0.9 - r * 0.15 * Math.sin(flick * 0.6);
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,224,150,0.85)';
+      ctx.beginPath(); ctx.arc(cx, cy - r * 0.1, r * 0.35, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+    } else if (e.kind === 'cannonball') {
+      // Cast-iron look: dark sphere, a curved highlight, a faint fuse
+      // ember trailing above it as it climbs.
+      const cx = x + e.w / 2, cy = y + e.h / 2, r = e.w / 2;
+      ctx.save();
+      const grad = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.15, cx, cy, r);
+      grad.addColorStop(0, '#8a6a52');
+      grad.addColorStop(0.5, e.color);
+      grad.addColorStop(1, '#2c1f18');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath(); ctx.arc(cx - r * 0.3, cy - r * 0.3, r * 0.22, 0, Math.PI * 2); ctx.fill();
+      const emberFlick = 0.5 + 0.5 * Math.sin(t * 20 + x);
+      ctx.fillStyle = 'rgba(255,180,90,' + emberFlick + ')';
+      ctx.shadowColor = 'rgba(255,150,60,0.9)';
+      ctx.shadowBlur = 8 * emberFlick;
+      ctx.beginPath(); ctx.arc(cx, cy + r * 1.15, r * 0.18 * emberFlick, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+    } else if (e.kind === 'cannon') {
+      // Iron barrel on a mount, pointed left — the direction it fires. Drawn
+      // so the muzzle sits flush with the entity's left edge, which is
+      // exactly where the balls are spawned.
+      const bh = e.h * 0.62;
+      const by = y + e.h - bh;
+      ctx.save();
+      // Flip about the entity's centre when it fires right, so the muzzle is
+      // drawn on the side the shots actually leave from.
+      if (e.dir > 0) { ctx.translate(x + e.w / 2, 0); ctx.scale(-1, 1); ctx.translate(-(x + e.w / 2), 0); }
+      // mount
+      ctx.fillStyle = '#4a3428';
+      ctx.beginPath();
+      ctx.moveTo(x + e.w * 0.25, y + e.h);
+      ctx.lineTo(x + e.w * 0.85, y + e.h);
+      ctx.lineTo(x + e.w * 0.68, y + e.h - e.h * 0.32);
+      ctx.lineTo(x + e.w * 0.42, y + e.h - e.h * 0.32);
+      ctx.closePath(); ctx.fill();
+      // barrel
+      const g = ctx.createLinearGradient(0, by, 0, by + bh);
+      g.addColorStop(0, '#8a6a52');
+      g.addColorStop(0.45, e.color || '#7a5240');
+      g.addColorStop(1, '#2c1f18');
+      ctx.fillStyle = g;
+      roundRect(x, by, e.w * 0.92, bh, 4); ctx.fill();
+      // muzzle ring
+      ctx.fillStyle = '#241a14';
+      roundRect(x, by - 1, 6, bh + 2, 3); ctx.fill();
+      ctx.restore();
+
+    } else if (e.kind === 'switch') {
+      // Diamond lever. Dim and static when off; once touched it locks gold
+      // and pulses gently — the level's only permanent state change, so the
+      // art should read as "solved," not as a repeating hazard.
+      const cx = x + e.w / 2, cy = y + e.h / 2, r = e.w / 2;
+      const on = e.color !== '#5a4a72';
+      const pulse = on ? (0.6 + 0.4 * Math.sin(t * 3)) : 1;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.PI / 4);
+      if (on) { ctx.shadowColor = e.color; ctx.shadowBlur = 10 * pulse; }
+      ctx.fillStyle = e.color;
+      ctx.globalAlpha = on ? 1 : 0.8;
+      ctx.fillRect(-r * 0.7, -r * 0.7, r * 1.4, r * 1.4);
+      ctx.restore();
+
+    } else if (e instanceof Box) {
+      // Wood-grain crate: base fill, a few darker grain lines, a routed
+      // border. Static art (no animation) — a box should read as solid and
+      // inert, unlike the hazards around it.
+      ctx.save();
+      ctx.fillStyle = '#8a5a34';
+      ctx.fillRect(x, y, e.w, e.h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1;
+      for (let gy = y + e.h * 0.28; gy < y + e.h; gy += e.h * 0.32) {
+        ctx.beginPath(); ctx.moveTo(x + 2, gy); ctx.lineTo(x + e.w - 2, gy); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(255,220,180,0.5)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1.5, y + 1.5, e.w - 3, e.h - 3);
+      ctx.restore();
+
+    } else if (e.isTriggerZone || e.kind === 'exit') {
+      // Goal: pulsing glow + chevron, so it reads as "the thing to reach"
+      // rather than a yellow rectangle.
+      const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+      ctx.save();
+      ctx.shadowColor = 'rgba(240,196,25,0.9)';
+      ctx.shadowBlur = 14 + 10 * pulse;
+      ctx.fillStyle = 'rgba(240,196,25,' + (0.16 + 0.12 * pulse) + ')';
+      roundRect(x, y, e.w, e.h, 6); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,224,138,' + (0.55 + 0.35 * pulse) + ')';
+      ctx.lineWidth = 2;
+      roundRect(x, y, e.w, e.h, 6); ctx.stroke();
+
+      const cx = x + e.w / 2, cy = y + e.h / 2;
+      const bob = 3 * Math.sin(t * 2.4);
+      ctx.strokeStyle = 'rgba(255,236,180,0.95)';
+      ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - 9, cy + 4 + bob);
+      ctx.lineTo(cx,     cy - 5 + bob);
+      ctx.lineTo(cx + 9, cy + 4 + bob);
+      ctx.stroke();
+      ctx.restore();
+
+    } else if (e.solid === false) {
+      // Small decorative markers — soft dot instead of a hard square.
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 2 + x * 0.05);
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      ctx.arc(x + e.w / 2, y + e.h / 2, e.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+    } else {
+      // Platforms: body, lit top edge, subtle grounding shadow beneath.
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      roundRect(x + 2, y + 4, e.w, e.h, 4); ctx.fill();
+      ctx.fillStyle = e.color || '#4a4a5e';
+      roundRect(x, y, e.w, e.h, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.16)';
+      roundRect(x + 2, y + 1.5, e.w - 4, 3, 1.5); ctx.fill();
+    }
+
+    if (e instanceof Box && e.carried) {
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 1, y + 1, e.w - 2, e.h - 2);
+    }
+  }
+  ctx.restore();
+}
+
+function mySlot() { return side === Host ? Host.mySlot : Client.mySlot; }
+
+function hud() {
+  if (side === Host) {
+    hudEl.textContent =
+      `HOST players:${Host.nw.players.size}  tick:${Host.tick}  ` +
+      `steps:${Host.stats.steps}  sim:${Host.stats.simMs.toFixed(2)}ms  ` +
+      `${CFG.SIM_HZ}Hz sim / ${CFG.SNAPSHOT_HZ}Hz net`;
+  } else {
+    const s = Client.stats;
+    const stale = s.lastRecv ? Math.round(performance.now() - s.lastRecv) : 0;
+    hudEl.textContent =
+      `CLIENT slot:${Client.mySlot}  gap:${Math.round(s.gap)}ms  since:${stale}ms  ` +
+      `snaps:${s.snaps}  teleports:${s.teleports}`;
+  }
+}
+
+/* ---------- countdown ----------
+   Implemented by simply NOT calling side.update(now) until it expires.
+   On the host that freezes the whole simulation — no gravity, no arrows,
+   no snapshots go out — so there is no way to die during the countdown
+   and no need to separately gate input. Clients are frozen for the same
+   reason: with no snapshots arriving there is nothing to advance to.
+   That's why this is safe to run locally on each side without syncing
+   the countdown itself over the wire. */
+const COUNTDOWN_SECS = 3;
+let countdownEndsAt = 0;
+
+function startCountdown() {
+  countdownEndsAt = performance.now() + COUNTDOWN_SECS * 1000;
+  $('countdown').classList.add('on');
+}
+
+function tickCountdown(now) {
+  if (!countdownEndsAt) return false;
+  const left = countdownEndsAt - now;
+  if (left <= 0) {
+    countdownEndsAt = 0;
+    $('countdown').classList.remove('on');
+    showToast('GO!', 700);
+    return false;
+  }
+  const secs = Math.ceil(left / 1000);
+  const el = $('cdNum');
+  const label = secs <= 0 ? 'GO' : String(secs);
+  if (el.textContent !== label) {
+    el.textContent = label;
+    // Re-trigger the pop animation on each new number.
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  }
+  return true;
+}
+
+/* ---------- transient messages ---------- */
+let toastTimer = null;
+function showToast(msg, ms) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), ms || 1400);
+}
+
+/* ---------- death / restart + exit feedback ----------
+   Both are derived from state that's already synced, so they work
+   identically on host and client without new messages: `dead` is part of
+   the player snapshot, and a player vanishing from the world is how
+   'each' mode removes someone who went through the portal. */
+let wasDead = false;
+let lastPlayerCount = -1;
+let peakPlayerCount = 0;
+let lastResetGen = -1;
+
+function updateFeedback() {
+  const slot = mySlot();
+  const players = side === Host ? side.nw.players
+                                : (Client.nw ? Client.nw.players : null);
+  if (!players) return;
+
+  const me = players.get(slot);
+  const dead = !!(me && me.dead);
+  if (dead && !wasDead) showToast('Restarting the run…', 1400);
+  wasDead = dead;
+
+  // Exit progress. peakPlayerCount is the high-water mark rather than a
+  // fixed total, because a level page can be joined mid-session and the
+  // authoritative room size isn't exposed to clients — the number of
+  // players ever seen at once is the closest honest stand-in.
+  const n = players.size;
+  if (n > peakPlayerCount) peakPlayerCount = n;
+  if (n !== lastPlayerCount) {
+    if (lastPlayerCount >= 0 && n < lastPlayerCount && me) {
+      showToast('A player made it through!', 1200);
+    }
+    lastPlayerCount = n;
+  }
+  const out = Math.max(0, peakPlayerCount - n);
+  const prog = $('exitProg');
+  if (peakPlayerCount > 1) {
+    prog.textContent = out + ' / ' + peakPlayerCount + ' through the portal';
+    prog.classList.add('on');
+  } else {
+    prog.classList.remove('on');
+  }
+
+  // A player leaving can force the level to restart (netcode's 'each'
+  // mode won't hand out a win nobody earned — see Host.drop). That comes
+  // through as the world's reset generation ticking over while nobody
+  // died, so it needs its own message rather than the "Hit!" one.
+  const gen = side === Host ? side.nw.world.resetGeneration : Client.resetGen;
+  if (typeof gen === 'number') {
+    if (lastResetGen >= 0 && gen !== lastResetGen && !dead) {
+      // Everyone reappearing at once means the room was rebuilt, not that
+      // one person respawned.
+      if (n > lastPlayerCount) showToast('A player left — restarting.', 1800);
+      peakPlayerCount = n;
+    }
+    lastResetGen = gen;
+  }
+}
+
+function frame(now) {
+  if (!running) return;
+  const counting = tickCountdown(now);
+  if (!counting) {
+    side.update(now);
+    updateFeedback();
+  }
+  draw();
+  hud();
+  requestAnimationFrame(frame);
+}
+
+function endSession(reason) {
+  running = false;
+  clearInterval(voiceHeartbeat);
+  $('endedMsg').textContent = reason || 'Session ended';
+  $('ended').classList.add('on');
+  try { if (peer && !peer.destroyed) peer.destroy(); } catch (e) {}
+}
+// Reload starts clean. Without clearing this, a reload after finishing
+// would try to resume the session we just wrote for the hand-off — and
+// on the 'done' branch that snapshot is intentionally null, which the
+// resume path can't rebuild a room from.
+$('endedBtn').onclick = () => {
+  try { sessionStorage.removeItem('dt-session'); } catch (e) {}
+  location.reload();
+};
+
+// --- level-complete hand-off ---
+// Per the HANDOFF CONTRACT (netcode.js), this writes sessionStorage
+// correctly for whichever role we are, then SHOULD navigate to
+// LEVELS[msg.next].url — but that manifest (index -> URL) is owned by
+// lobby.js, which this file doesn't have. Flagging rather than
+// guessing a URL: session state is written correctly so the actual
+// navigation line is a one-line addition once the manifest exists.
+function onLevelComplete(msg) {
+  running = false;
+  $('exitProg').classList.remove('on');
+
+  // Credit the local device for this level before going anywhere — it's
+  // what unlocks the next tile in the lobby grid on this browser.
+  try { if (window.Progress) window.Progress.markComplete(msg.level); } catch (e) {}
+
+  try {
+    const payload = (side === Host)
+      ? { role: 'host', roomCode: Host.selfId,
+          hostSnapshot: msg.done ? null : Host.snapshot(msg.next) }
+      : { role: 'client', roomCode: Client.conn.peer,
+          token: Client.myToken, level: msg.next };
+    if (msg.done) { sessionStorage.removeItem('dt-session'); }
+    else { sessionStorage.setItem('dt-session', JSON.stringify(payload)); }
+  } catch (e) { console.error('[handoff] failed to persist session', e); }
+
+  // Host only: detach the pagehide 'bye' broadcast BEFORE navigating, or
+  // every client is told the session ended a split second before they
+  // were going to follow us to the same page.
+  if (side === Host) Host.prepareHandoff();
+
+  if (msg.done) {
+    $('endedMsg').textContent = 'All levels complete — nice work!';
+    $('endedBtn').textContent = 'Back to lobby';
+    $('ended').classList.add('on');
+    $('endedBtn').onclick = () => { location.href = LOBBY_URL; };
+    return;
+  }
+
+  let url = null;
+  try { url = window.Levels.urlFor(msg.next); } catch (e) {}
+  if (!url) {
+    $('endedMsg').textContent = 'Level complete — but level ' + msg.next + ' has no page in levels.js.';
+    $('endedBtn').textContent = 'Back to lobby';
+    $('ended').classList.add('on');
+    $('endedBtn').onclick = () => { location.href = LOBBY_URL; };
+    return;
+  }
+
+  showToast('Level complete!', 1200);
+  setTimeout(() => { location.href = url; }, 1000);
+}
+
+function begin(which) {
+  side = which;
+  boot.style.display = 'none';
+  stage.classList.add('on');
+  resize();
+  running = true;
+
+  const slot = mySlot();
+  if (slot >= 0) {
+    $('youAreSwatch').style.background = PALETTE[slot % PALETTE.length];
+    $('youAre').classList.add('on');
+  }
+
+  initVoice();
+  startCountdown();
+  requestAnimationFrame(frame);
+}
+
+// --- voice/settings UI, backed by voicechat-adapter.js's VoiceUI ---
+let voiceHeartbeat = null;
+
+function currentRoster() {
+  // Both sides now get the full room list, so voice is a true mesh:
+  // the host reads its own peer map; a client reads the roster the host
+  // pushes down (folded into 'welcome' on join/rejoin, re-sent on every
+  // membership change — see VOICE ROSTER in netcode.js). Game traffic is
+  // still star-only; these ids are used solely to place voice calls.
+  if (side === Host) return Host.rosterIds();
+  return (Client.roster && Client.roster.length) ? Client.roster
+                                                  : [Client.conn.peer, myPeerId];
+}
+
+function renderVoicePanel() {
+  if (!window.VoiceUI || !window.VoiceUI.isSupported()) return;
+  const V = window.VoiceUI;
+
+  $('selfMuteBtn').classList.toggle('muted', V.isSelfMuted());
+
+  const mode = V.getMode();
+  for (const btn of $('modeSwitch').children) {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  }
+
+  const dotsEl = $('voiceDots');
+  dotsEl.innerHTML = '';
+  const peerListEl = $('peerList');
+  peerListEl.innerHTML = '';
+  for (const id of currentRoster()) {
+    if (id === myPeerId) continue;
+    const dot = document.createElement('div');
+    dot.className = 'vdot' + (V.isPeerSpeaking(id) ? ' speaking' : '');
+    dotsEl.appendChild(dot);
+
+    const row = document.createElement('div');
+    row.className = 'peerRow';
+    const muteBtn = document.createElement('button');
+    muteBtn.className = 'vbtn';
+    muteBtn.style.width = '22px'; muteBtn.style.height = '22px'; muteBtn.style.fontSize = '11px';
+    muteBtn.textContent = V.isPeerLocallyMuted(id) ? '🔇' : '🔊';
+    muteBtn.onclick = () => V.togglePeerMute(id);
+    const vol = document.createElement('input');
+    vol.type = 'range'; vol.min = 0; vol.max = 100; vol.value = Math.round(V.getPeerVolume(id) * 100);
+    vol.oninput = () => V.setPeerVolume(id, vol.value / 100);
+    row.append(muteBtn, vol);
+    peerListEl.appendChild(row);
+  }
+}
+
+async function initVoice() {
+  if (!window.VoiceUI || !window.VoiceUI.isSupported()) return;
+  await window.VoiceUI.init(peer, { onSpeakingChange: renderVoicePanel, onPeerConnected: renderVoicePanel, onPeerDisconnected: renderVoicePanel });
+  $('voiceBar').classList.add('on');
+
+  // Re-mesh the moment membership changes, rather than waiting up to a
+  // full heartbeat. Both sides expose the same hook.
+  const onRosterChange = () => {
+    window.VoiceUI.sync(currentRoster(), myPeerId);
+    renderVoicePanel();
+  };
+  if (side === Host) Host.onRoster = onRosterChange;
+  else Client.onRoster = onRosterChange;
+
+  // Heartbeat stays as the self-healing backstop: sync() is idempotent,
+  // so a roster message lost on the unreliable channel costs a couple of
+  // seconds of missing voice rather than a permanently broken call.
+  voiceHeartbeat = setInterval(() => {
+    window.VoiceUI.sync(currentRoster(), myPeerId);
+  }, 2000);
+  window.VoiceUI.sync(currentRoster(), myPeerId);
+  window.VoiceUI.onChange(renderVoicePanel);
+  renderVoicePanel();
+}
+
+$('selfMuteBtn').onclick = () => window.VoiceUI && window.VoiceUI.toggleSelfMute();
+$('settingsBtn').onclick = () => $('voicePanel').classList.toggle('on');
+for (const btn of $('modeSwitch').children) {
+  btn.onclick = () => window.VoiceUI && window.VoiceUI.setMode(btn.dataset.mode);
+}
+$('leaveBtn').onclick = () => {
+  try { sessionStorage.removeItem('dt-session'); } catch (e) {}
+  if (side === Host) { try { Host.shutdown(); } catch (e) {} }
+  else { try { Client.end('You left.'); } catch (e) {} }
+  endSession('You left the session.');
+};
+
+// PeerJS's signalling server connection can drop without the existing
+// WebRTC data channels dying — established play continues fine, but no
+// NEW peer can find us until it's back. Reconnecting keeps the room
+// joinable instead of silently going dark.
+function wirePeerRecovery() {
+  if (!peer) return;
+  peer.on('disconnected', () => {
+    if (!peer || peer.destroyed) return;
+    showToast('Reconnecting…', 1200);
+    try { peer.reconnect(); } catch (e) {}
+  });
+}
+
+// --- solo test path (no lobby exists yet to hand this off from) ---
+// Uses an AUTO-ASSIGNED peer id (never a fixed room code), so it can
+// never collide with a leftover id from a previous test run — that's
+// what "ID taken" was: a stale registration of a FIXED id (the room
+// code) from a prior session that hadn't cleared yet. This path doesn't
+// need a fixed id at all since nobody else is joining.
+function startSolo() {
+  setStatus('Starting solo test…');
+  peer = new Peer({ debug: 1 });
+  peer.on('open', id => {
+    myPeerId = id;
+    Host.prepare(peer, setStatus, { totalLevels: 1, onComplete: onLevelComplete });
+    Host.lock(0);
+    Host.start(peer, input, setStatus, endSession);
+    begin(Host);
+  });
+  wirePeerRecovery();
+  peer.on('error', e => setStatus('Peer error: ' + e.type));
+}
+$('soloBtn').onclick = startSolo;
+
+// --- entry: resume-only, per HANDOFF CONTRACT item 5. No host/join UI
+// here — this page is only ever reached via hand-off from the lobby.
+// Solo test button is the escape hatch until a real lobby exists. ---
+function bootFromSession() {
+  let sess = null;
+  try { sess = JSON.parse(sessionStorage.getItem('dt-session') || 'null'); } catch (e) {}
+
+  if (!sess) {
+    setStatus('No session found.');
+    $('soloBtn').style.display = 'inline-block';
+    return;
+  }
+
+  if (sess.role === 'host') {
+    if (!sess.hostSnapshot || !sess.hostSnapshot.roomCode) {
+      // Written by a 'done' hand-off, or storage got mangled. Nothing to
+      // rebuild a room from, so offer the clean path rather than throwing
+      // deep inside restore().
+      setStatus('That session has already finished.');
+      $('soloBtn').style.display = 'inline-block';
+      return;
+    }
+    setStatus('Reconnecting as host…');
+    peer = new Peer(sess.roomCode, { debug: 1 });
+    peer.on('open', id => {
+      myPeerId = id;
+      Host.restore(peer, sess.hostSnapshot, input, setStatus, endSession, onLevelComplete);
+      begin(Host);
+    });
+    wirePeerRecovery();
+    peer.on('error', e => {
+      if (e.type === 'unavailable-id') {
+        setStatus('Room code "' + sess.roomCode + '" is still registered from a previous session ' +
+                   '(close any other tabs using it, or wait a moment and reload).');
+      } else {
+        setStatus('Peer error: ' + e.type);
+      }
+    });
+  } else if (sess.role === 'client') {
+    setStatus('Reconnecting…');
+    peer = new Peer({ debug: 1 });
+    peer.on('open', id => {
+      myPeerId = id;
+      const conn = peer.connect(sess.roomCode, { reliable: false, serialization: 'json' });
+      conn.on('open', () => {
+        Client.rejoin(conn, sess.token, input, setStatus, endSession, onLevelComplete);
+        // Early warning of a degrading path — Client widens its
+        // interpolation buffer rather than stuttering once packets
+        // actually start arriving late.
+        const pc = conn.peerConnection;
+        if (pc) {
+          pc.addEventListener('iceconnectionstatechange', () => {
+            const st = pc.iceConnectionState;
+            if (st === 'disconnected' || st === 'failed') Client.flagUnstable();
+          });
+        }
+      });
+      conn.on('data', msg => {
+        Client.onData(msg);
+        if (msg && msg.type === 'welcome' && !running) begin(Client);
+      });
+      conn.on('close', () => endSession('Host ended the session.'));
+      conn.on('error', () => setStatus('Connection error.'));
+    });
+    wirePeerRecovery();
+    peer.on('error', e => {
+      setStatus(e.type === 'peer-unavailable'
+        ? 'The host is no longer hosting that room.'
+        : 'Peer error: ' + e.type);
+    });
+  } else {
+    setStatus('Unrecognized session — open this level from the lobby.');
+  }
+}
+
+resize();
+bootFromSession();
+})();
+</script>
+</body>
+</html>

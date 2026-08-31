@@ -65,6 +65,7 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
 <script>
 /* ==== LEVEL 1 — piston platforms + base star/mote scenery ====
    Only this level's obstacle behaviour lives here. Everything else
@@ -78,7 +79,7 @@ window.SKY_THEME={ sky:['#1a1030','#2a1b3f','#3a2450','#4a2c52'], nebula:'201,16
 window.BG_IMAGE='bg/bg-canyon-violet.png';
 window.BG_PARALLAX=0.22;
 window.BG_DRIFT=0.006;
-window.GLASS_BLUR=1.2;
+window.GLASS_BLUR=3;
 window.GLASS_TINT='rgba(70,45,110,0.22)';
 window.SHOW_STARS=false;
 window.SHOW_MOTES=false;
@@ -111,7 +112,7 @@ function buildLevel(){
   // independent timer. The player only gets a landing window when a platform
   // swings back into reach — so you plant on the current platform and wait
   // for the right moment rather than always having somewhere to jump.
-  const travelTop=PLAY_H*0.16, travelBottom=PLAY_H-56;
+  const travelTop=PLAY_H*0.34, travelBottom=PLAY_H-46;
 
   for(let i=0;i<PLATFORM_COUNT;i++){
     const w=rand(PW_MIN,PW_MAX);

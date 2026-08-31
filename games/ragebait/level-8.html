@@ -5,9 +5,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1b1035">
+<meta name="theme-color" content="#070d16">
 <title>DRIFT HOP · Pendulum Peak</title>
 <link rel="stylesheet" href="shared.css">
+<style>
+  /* Level 8 runs on the painted backdrop — retheme the chrome to cool
+     blues so nothing candy-coloured sits on top of the artwork. */
+  body{ background:#070d16; }
+  .title{
+    background:linear-gradient(90deg,#8fd4f0,#cfe4f5,#7fb6d9);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .stat b{ color:#8fd4f0; }
+  .screen{
+    background:radial-gradient(ellipse at 50% 45%, rgba(14,26,42,.93), rgba(5,10,18,.97));
+  }
+  .screen h1{
+    background:linear-gradient(90deg,#8fd4f0,#cfe4f5,#7fb6d9);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 3px 14px rgba(90,160,200,.45));
+  }
+  .big-btn{
+    background:linear-gradient(135deg,#4a90b8,#8fd4f0); color:#06121e;
+    box-shadow:0 8px 22px rgba(90,160,200,.30);
+  }
+  .tbtn.held{ background:rgba(143,212,240,.34); border-color:#8fd4f0; }
+  #btnJump{
+    background:linear-gradient(135deg,rgba(74,144,184,.34),rgba(143,212,240,.26));
+    border-color:rgba(143,212,240,.55);
+  }
+  #btnJump.held{ background:linear-gradient(135deg,rgba(74,144,184,.62),rgba(143,212,240,.5)); }
+  .icon-btn.active{ background:rgba(143,212,240,.34); border-color:#8fd4f0; }
+  #countdownNum{
+    background:linear-gradient(90deg,#8fd4f0,#cfe4f5,#7fb6d9);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+</style>
 </head>
 <body>
 <div id="wrap">
@@ -64,6 +97,8 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
+
 <script>
 // ==== LEVEL 8 — pendulum swings at the summit: longest arcs, tightest timing ====
 const LEVEL_ID='level-8';
@@ -73,11 +108,27 @@ function winFlavorText(deaths){
   return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles each pendulum's arm length, swing angle, and speed, at the summit.`;
 }
 
-window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,220,170' };
-window.SHOW_NEBULA = true;
-window.SHOW_STARS = false;
-window.SHOW_MOTES = false;
+// Painted silhouette backdrop, sitting behind a frosted-glass pane.
+window.BG_IMAGE   = 'bg/bg-summit.png';
+window.BG_PARALLAX= 0.22;   // slow drift as you advance
+window.BG_DRIFT   = 0.005;  // keeps breathing while you wait on a platform
+window.GLASS_BLUR = 3;
+window.GLASS_TINT = 'rgba(90,125,170,0.22)';
+window.SHOW_NEBULA = false;
+window.SHOW_STARS  = false;
+window.SHOW_MOTES  = false;
 window.MUSIC_THEME = 'mountain';
+
+// Environment palette pulled from the backdrop — cool blues, near-black
+// silhouettes. No candy colours anywhere in this level.
+const ENV = {
+  ink:    '#0b1422',   // platform / land body (near-black, matches the art)
+  rim:    '#8fd4f0',   // cool cyan rim light so shapes stay readable
+  rimSoft:'rgba(143,212,240,0.35)',
+  chain:  'rgba(150,185,215,0.45)',
+  land:   '#0a1220',
+  landTop:'#16283c',
+};
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
 
 let ridgesFar=null, ridgesNear=null, leaves=null, windGusts=null, nextGustAt=0;
@@ -181,7 +232,7 @@ function buildLevel(){
   platforms.push(startLedge);
 
   const PEND_COUNT=PEND_TUNING.count;
-  const anchorTop=PLAY_H*0.14;
+  const anchorTop=PLAY_H*0.26;
   let prevCX=startLedge.slotCX, prevBottomY=groundY, prevHalfW=startLedge.w/2;
 
   for(let i=0;i<PEND_COUNT;i++){
@@ -265,7 +316,7 @@ function buildLevel(){
   if(!stars)buildSky();
 }
 
-const PEND_COLORS=['#6ee7c8','#ff9e7d','#ffd166','#b98bff','#7fd4ff'];
+
 
 function updatePlatforms(t){
   for(const p of platforms){
@@ -288,20 +339,43 @@ function updatePlatforms(t){
 function drawPlatform(p,t){
   const isHome=p===startLedge;
   if(isHome){
-    const r=p.h*0.5;
-    ctx.save();ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
-    ctx.fillStyle='#b98bff';roundRect(p.x,p.y,p.w,p.h,r);ctx.fill();ctx.restore();
-    ctx.fillStyle='rgba(230,214,255,0.85)';ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText('START',p.x+p.w/2,p.y-8);
+    // A slab of actual ground rather than a floating candy bar — it reads
+    // as the cliff edge you set off from, in the backdrop's own palette.
+    const groundH = (PLAY_H - p.y) + 60*scale;
+    ctx.save();
+    ctx.fillStyle=ENV.land;
+    ctx.beginPath();
+    ctx.moveTo(p.x-40*scale, p.y+groundH);
+    ctx.lineTo(p.x-40*scale, p.y+10*scale);
+    ctx.quadraticCurveTo(p.x-14*scale, p.y, p.x+6*scale, p.y);
+    ctx.lineTo(p.x+p.w-6*scale, p.y);
+    ctx.quadraticCurveTo(p.x+p.w+10*scale, p.y+4*scale, p.x+p.w+16*scale, p.y+22*scale);
+    ctx.lineTo(p.x+p.w+16*scale, p.y+groundH);
+    ctx.closePath(); ctx.fill();
+    // lit top edge catching the sky
+    ctx.strokeStyle=ENV.landTop; ctx.lineWidth=Math.max(2,3*scale);
+    ctx.beginPath();
+    ctx.moveTo(p.x+6*scale, p.y);
+    ctx.lineTo(p.x+p.w-6*scale, p.y);
+    ctx.stroke();
+    ctx.strokeStyle=ENV.rimSoft; ctx.lineWidth=Math.max(1,1.4*scale);
+    ctx.beginPath();
+    ctx.moveTo(p.x+6*scale, p.y-1);
+    ctx.lineTo(p.x+p.w-6*scale, p.y-1);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(180,215,240,0.75)';
+    ctx.font=`bold ${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText('START',p.x+p.w/2,p.y-10*scale);
     return;
   }
 
-  const fill=PEND_COLORS[p.hue%PEND_COLORS.length];
+  const fill=ENV.ink;
   const cx=p.x+p.w/2, cy=p.y+p.h/2;
 
   // chain from the fixed anchor down to the platform
   ctx.save();
-  ctx.strokeStyle='rgba(90,80,70,0.85)';
+  ctx.strokeStyle=ENV.chain;
   ctx.lineWidth=Math.max(2,3*scale);
   ctx.setLineDash([5*scale,4*scale]);
   ctx.beginPath();
@@ -309,28 +383,27 @@ function drawPlatform(p,t){
   ctx.lineTo(cx, cy);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(90,80,70,0.9)';
+  ctx.fillStyle=ENV.chain;
   ctx.beginPath();ctx.arc(p.anchorX,p.anchorY,4*scale,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
   ctx.save();
   if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
-  else{ctx.shadowColor=fill;ctx.shadowBlur=14;}
+  else{ctx.shadowColor=ENV.rimSoft;ctx.shadowBlur=12;}
   ctx.fillStyle=fill;
   ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
-  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:'rgba(255,255,255,0.8)';
-  ctx.lineWidth=Math.max(1.5,p.size*0.05);
+  // rim light keeps the near-black silhouette legible against dark art
+  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:ENV.rim;
+  ctx.lineWidth=Math.max(1.5,p.size*0.055);
   ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.stroke();
 
   if(player.visited.has(p)){
-    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillStyle=ENV.rimSoft;ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
     ctx.fillText('✦',cx,p.y-p.size*0.28);
   }
 }
-
-bootGame();
 
 bootGame();
 </script>

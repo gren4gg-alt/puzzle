@@ -3,9 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>App Hub — Small Web Toys</title>
+<meta name="description" content="Broshere — a small, hand-built collection of free browser tools and games. Every app runs entirely client-side: no accounts, no uploads, no servers. Compress media, resize exam photos, solve photo puzzles, and play browser games, all processed locally in your device.">
+<title>Broshere — Small Web Toys, No Accounts, No Uploads</title>
 
-<!-- Google AdSense — replace with your real publisher id before going live -->
+<!--
+  IMPORTANT before submitting/appealing to AdSense:
+  Replace ca-pub-XXXXXXXXXXXXXXXX below (both the script src and every
+  data-ad-client attribute) with your real AdSense publisher ID, and
+  replace the data-ad-slot values with real ad unit IDs created in your
+  AdSense dashboard. Placeholder ad code left live on a site is itself
+  a common reason for rejection.
+-->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
         crossorigin="anonymous"></script>
 
@@ -13,18 +21,18 @@
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
   :root{
-    --paper:   #f2ede2;
-    --panel:   #fffdf8;
-    --ink:     #24211b;
-    --sub:     #6b6455;
-    --brass:   #b8863c;
+    --paper:    #f2ede2;
+    --panel:    #fffdf8;
+    --ink:      #24211b;
+    --sub:      #6b6455;
+    --brass:    #b8863c;
     --brass-deep: #8f6526;
-    --grid:    rgba(36,33,27,.08);
-    --line:    rgba(36,33,27,.16);
+    --grid:     rgba(36,33,27,.08);
+    --line:     rgba(36,33,27,.16);
   }
 
   *{ box-sizing:border-box; }
-  html{ -webkit-font-smoothing:antialiased; }
+  html{ -webkit-font-smoothing:antialiased; scroll-behavior: smooth; }
 
   body{
     margin:0;
@@ -58,7 +66,7 @@
     max-width: 960px;
     margin: 0 auto;
     width:100%;
-    padding: 64px 24px 40px;
+    padding: 48px 24px 40px;
   }
 
   .eyebrow{
@@ -97,11 +105,41 @@
     font-size: 1.05rem;
     max-width: 46ch;
     line-height: 1.6;
-    margin: 0;
+    margin: 0 0 24px 0;
+  }
+
+  /* ---------- ALL APPS ACTION BUTTON ---------- */
+  .btn-all-apps {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--panel);
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 12px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--brass);
+    transition: all .15s ease;
+  }
+
+  .btn-all-apps:hover {
+    background: var(--brass-deep);
+    border-color: var(--brass-deep);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .btn-all-apps:active {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0 var(--ink);
   }
 
   .count-tag{
-    margin-top: 28px;
+    margin-top: 36px;
     display:flex;
     align-items:center;
     gap: 10px;
@@ -141,11 +179,11 @@
     padding: 22px 20px 20px;
     text-decoration:none;
     color: var(--ink);
+    cursor: pointer;
     transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
   }
 
   .app-card::before{
-    /* punch-card corner notch, echoes the graph paper / index-card idea */
     content:"";
     position:absolute;
     top:0; left:22px;
@@ -202,22 +240,64 @@
     margin: 0;
   }
 
+  /* Stylized CTA Button Inside Card */
   .card-cta{
-    display:flex;
+    display:inline-flex;
     align-items:center;
-    gap:6px;
+    justify-content: space-between;
     font-family:'JetBrains Mono', monospace;
     font-size: 12px;
     font-weight: 600;
     color: var(--ink);
-    padding-top: 10px;
-    border-top: 1px dashed var(--line);
+    background: rgba(36,33,27,.04);
+    padding: 8px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    margin-top: 6px;
+    transition: all .18s ease;
   }
   .card-cta .arrow{
     transition: transform .18s ease;
   }
+  .app-card:hover .card-cta{ 
+    background: var(--ink);
+    color: var(--panel);
+    border-color: var(--ink);
+  }
   .app-card:hover .card-cta .arrow{ transform: translateX(4px); }
-  .app-card:hover .card-cta{ color: var(--brass-deep); }
+
+  /* ---------- content sections (about / faq) ---------- */
+  .content-section{
+    max-width: 720px;
+    margin: 64px auto 0;
+    padding: 0 24px;
+  }
+  .content-section h2{
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+  }
+  .content-section p{
+    color: var(--sub);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    margin: 0 0 16px;
+  }
+  .faq-item{
+    border-top: 1px solid var(--line);
+    padding: 18px 0;
+  }
+  .faq-item:last-child{ border-bottom: 1px solid var(--line); }
+  .faq-item h3{
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .faq-item p{
+    margin: 0;
+    font-size: 0.92rem;
+  }
 
   .empty-state{
     grid-column: 1 / -1;
@@ -230,13 +310,43 @@
     border-radius: 4px;
   }
 
+  /* ---------- footer & links ---------- */
   footer{
     text-align:center;
     font-family:'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--sub);
-    padding: 20px 20px 28px;
+    padding: 24px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
+
+  .footer-links {
+    display: flex;
+    gap: 16px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .footer-links button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--ink);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .footer-links button:hover {
+    color: var(--brass-deep);
+  }
+
   footer code{
     background: rgba(36,33,27,.06);
     padding: 2px 6px;
@@ -244,14 +354,58 @@
     color: var(--ink);
   }
 
+  /* ---------- modal dialogs ---------- */
+  dialog {
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    max-width: 500px;
+    width: 90%;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+
+  dialog::backdrop {
+    background: rgba(36, 33, 27, 0.4);
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 8px;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--sub);
+  }
+
+  .modal-body p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--sub);
+  }
+
   @media (prefers-reduced-motion: reduce){
-    .app-card, .app-card .arrow{ transition:none; }
+    .app-card, .app-card .arrow, .btn-all-apps{ transition:none; }
   }
 </style>
 </head>
 <body>
 
-<!-- ======================= TOP AD BANNER ======================= -->
 <div class="ad-row">
   <ins class="adsbygoogle"
        style="display:inline-block;width:728px;height:90px"
@@ -259,11 +413,16 @@
        data-ad-slot="3333333333"></ins>
 </div>
 
-<!-- ======================= HERO ======================= -->
 <header>
   <span class="eyebrow">no accounts &middot; no servers &middot; runs in your browser</span>
   <h1>Small web toys, made to be shared.</h1>
-  <p>Each app below is a single plain HTML/CSS/JS file. Pick one to get started — nothing to install, nothing to sign up for.</p>
+  <p>Broshere is a small, hand-built collection of browser tools and games. Each app below is a single self-contained page — pick one to get started. Everything runs on your own device: files you open, photos you resize, or games you play never leave your browser and are never uploaded to any server.</p>
+  
+  <button class="btn-all-apps" onclick="scrollToGrid()">
+    <span>🎮 Explore All Apps</span>
+    <span style="font-size: 11px;">↓</span>
+  </button>
+
   <div class="count-tag">
     <span id="appCount">0 apps</span>
     <span class="rule"></span>
@@ -271,12 +430,33 @@
   </div>
 </header>
 
-<!-- ======================= APP GRID ======================= -->
 <main>
   <div id="appGrid"></div>
 </main>
 
-<!-- ======================= BOTTOM AD BANNER ======================= -->
+<section class="content-section" id="faq">
+  <h2>Frequently asked questions</h2>
+  <div class="faq-item">
+    <h3>Do I need to create an account?</h3>
+    <p>No. Nothing on Broshere requires sign-up, login, or any personal information. Open a tool and start using it.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Are my files or photos uploaded anywhere?</h3>
+    <p>No. Every tool processes files locally in your browser using JavaScript. Nothing is sent to a server, so your files stay on your own device.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Is Broshere free to use?</h3>
+    <p>Yes, every tool and game on this site is free. The site is supported by display ads rather than subscriptions or paywalls.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Which browsers are supported?</h3>
+<p>Any modern browser — Chrome, Firefox, Safari, or Edge — on desktop or mobile. Since the tools rely on standard browser APIs, very old browser versions may not support some features, and a few games may not work on every device.</p>  </div>
+  <div class="faq-item">
+    <h3>Can I suggest a new tool or report a bug?</h3>
+    <p>Yes — email <strong>podugenerations@gmail.com</strong> with what you'd like to see or what went wrong, and it'll get read.</p>
+  </div>
+</section>
+
 <div class="ad-row bottom">
   <ins class="adsbygoogle"
        style="display:inline-block;width:728px;height:90px"
@@ -285,14 +465,63 @@
 </div>
 
 <footer>
-  Add new apps by editing the <code>APPS</code> list in this page's source.
+  <ul class="footer-links">
+    <li><button onclick="document.getElementById('aboutModal').showModal()">About</button></li>
+    <li>&middot;</li>
+    <li><button onclick="document.getElementById('contactModal').showModal()">Contact</button></li>
+    <li>&middot;</li>
+    <li><button onclick="document.getElementById('privacyModal').showModal()">Privacy</button></li>
+  </ul>
+  <div>© 2026 broshere.com &middot; a solo-built collection of browser tools</div>
 </footer>
 
+<dialog id="aboutModal">
+  <div class="modal-header">
+    <h3>About Broshere</h3>
+    <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+
+<p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+
+<p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+
+  </div>
+</dialog>
+
+<dialog id="contactModal">
+  <div class="modal-header">
+    <h3>Contact</h3>
+    <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
+  </div>
+</dialog>
+
+<dialog id="privacyModal">
+  <div class="modal-header">
+    <h3>Privacy Policy</h3>
+    <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+    <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+    <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+    <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+    <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
+  </div>
+</dialog>
+
 <script>
+  function scrollToGrid() {
+    document.getElementById("appGrid").scrollIntoView({ behavior: "smooth" });
+  }
+
   /* =====================================================================
      APP REGISTRY
-     Add a new entry here whenever you ship another single-file app.
-     Each app lives in its own HTML file alongside this one.
      ===================================================================== */
   const APPS = [
     {
@@ -323,14 +552,6 @@
       emoji: "🎮",
       description: "Browse every small browser game in one place — arcade, word games, and whatever comes next."
     },
-    // Add more apps here as you build them, e.g.:
-    // {
-    //   name: "Your Next App",
-    //   url: "your-next-app.html",
-    //   tag: "Tool",
-    //   emoji: "✨",
-    //   description: "A short one-line description of what it does."
-    // },
   ];
 
   const grid = document.getElementById("appGrid");
@@ -348,7 +569,10 @@
       </div>
       <h2 class="card-name">${app.name}</h2>
       <p class="card-desc">${app.description}</p>
-      <span class="card-cta">Open app <span class="arrow">→</span></span>
+      <div class="card-cta">
+        <span>Launch App</span>
+        <span class="arrow">→</span>
+      </div>
     `;
     grid.appendChild(card);
   });

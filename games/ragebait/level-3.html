@@ -68,6 +68,8 @@
 
 <script src="shared.js"></script>
 <script src="engine.js"></script>
+<script src="momo.js"></script>
+
 <script>
 /* Only this level's obstacle behaviour + extra scenery lives here.
    Everything else comes from engine.js / shared.js / shared.css. */
@@ -79,7 +81,7 @@ const LEVEL_TITLE='DRIFT HOP';
 window.BG_IMAGE='bg/bg-mountain-ridge.png';
 window.BG_PARALLAX=0.22;
 window.BG_DRIFT=0.006;
-window.GLASS_BLUR=1;
+window.GLASS_BLUR=3;
 window.GLASS_TINT='rgba(35,65,105,0.20)';
 window.SHOW_STARS=false;
 window.SHOW_MOTES=false;
@@ -193,7 +195,7 @@ function buildLevel(){
   // every orbit runs at its own speed that alignment keeps coming back
   // around, so the challenge is reading two loops and picking the moment —
   // not surviving an impossible timing window.
-  const travelTop=PLAY_H*0.22, travelBottom=PLAY_H-80;
+  const travelTop=PLAY_H*0.36, travelBottom=PLAY_H-58;
 
   for(let i=0;i<PLATFORM_COUNT;i++){
     const size=rand(48,58)*scale;
