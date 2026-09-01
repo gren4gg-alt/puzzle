@@ -36,9 +36,9 @@
   .stat b{color:var(--coral);font-size:12px;}
   .icon-btn{
     width:34px;height:34px;flex:0 0 34px;border-radius:50%;
-    background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);
+    background:rgba(40,28,66,.55);border:1px solid rgba(255,255,255,.2);
     color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:transform .1s,background .15s;backdrop-filter:blur(6px);
+    cursor:pointer;transition:transform .1s,background .15s;
   }
   .icon-btn:hover{background:rgba(255,255,255,.2);}
   .icon-btn:active{transform:scale(.9);}
@@ -46,6 +46,18 @@
 
   #canvasHolder{position:relative;flex:1;min-height:0;overflow:hidden;}
   canvas{display:block;width:100%;height:100%;}
+
+  /* Vignette — was a full-canvas gradient repainted by JS every frame on
+     every image-backed level (see engine.js). It never actually changes
+     shape, so it's a plain CSS layer instead: painted once, composited
+     by the GPU for free from then on. Only shown (via .show, toggled
+     once in bootGame()) on levels that set window.BG_IMAGE. */
+  #vignetteOverlay{
+    position:absolute;inset:0;pointer-events:none;z-index:2;display:none;
+    background:radial-gradient(ellipse 100% 100% at 50% 47%,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,.20) 100%);
+  }
+  #vignetteOverlay.show{display:block;}
 
   .screen{
     position:absolute;inset:0;display:flex;flex-direction:column;
@@ -96,8 +108,8 @@
   #touch .pad.moves{gap:22px;}
   .tbtn{
     width:66px;height:66px;border-radius:50%;
-    background:rgba(255,255,255,.11);border:1.5px solid rgba(255,255,255,.3);
-    backdrop-filter:blur(8px);color:#fff;font-size:24px;
+    background:rgba(45,27,78,.62);border:1.5px solid rgba(255,255,255,.3);
+    color:#fff;font-size:24px;
     display:flex;align-items:center;justify-content:center;
     transition:transform .07s,background .1s;
   }

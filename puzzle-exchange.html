@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Photo Puzzle Exchange — Scramble & Solve</title>
-
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
+     crossorigin="anonymous"></script>
 <!-- Tailwind CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -13,8 +14,7 @@
      your real publisher id, and the data-ad-slot values with your
      real ad unit slot ids before going live.
      ============================================================ -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
-     crossorigin="anonymous"></script>
+
 
 <style>
   :root{
@@ -131,6 +131,48 @@
     letter-spacing:.03em;
   }
 
+  /* Modal Styling */
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    background: var(--panel);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  }
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-header h3 {
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+  .modal-body {
+    padding: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .modal-body p {
+    margin-bottom: 0.75rem;
+  }
+  .modal-body p:last-child {
+    margin-bottom: 0;
+  }
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--ink);
+  }
 </style>
 </head>
 
@@ -164,6 +206,36 @@
     </a>
   </div>
 </header>
+
+<!-- ======================= HOW TO USE SECTION ======================= -->
+<div class="max-w-5xl mx-auto w-full px-4 mt-6">
+  <details class="bg-white border border-slate-200 rounded-xl shadow-sm group">
+    <summary class="flex items-center justify-between px-5 py-3 cursor-pointer select-none font-semibold text-sm">
+      <span class="flex items-center gap-2">💡 How to Use Photo Puzzle Exchange</span>
+      <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+    </summary>
+    <div class="px-5 pb-5 pt-2 border-t border-slate-100 text-xs leading-relaxed grid md:grid-cols-2 gap-6 text-slate-600">
+      <div class="space-y-2">
+        <strong class="text-slate-800 text-sm block">🧩 How to Create a Puzzle:</strong>
+        <ol class="list-decimal list-inside space-y-1">
+          <li>Upload any photo from your device.</li>
+          <li>Select your preferred grid size ($2\times2$ up to $6\times6$).</li>
+          <li>Click <strong>Download & Share</strong> to get the scrambled image.</li>
+          <li><em>Important:</em> Send the file as a <strong>Document/File</strong> (not a regular photo) on messaging apps like WhatsApp to keep the hidden solution key intact.</li>
+        </ol>
+      </div>
+      <div class="space-y-2">
+        <strong class="text-slate-800 text-sm block">🧠 How to Solve a Puzzle:</strong>
+        <ol class="list-decimal list-inside space-y-1">
+          <li>Switch to the <strong>Solve a Puzzle</strong> tab.</li>
+          <li>Upload the scrambled puzzle file you received.</li>
+          <li>Drag pieces from the side tray into their correct slots on the grid.</li>
+          <li>Complete the puzzle to view and download the restored original image!</li>
+        </ol>
+      </div>
+    </div>
+  </details>
+</div>
 
 <!-- ======================= MODE SWITCHER ======================= -->
 <div class="max-w-5xl mx-auto w-full px-4 mt-6">
@@ -259,9 +331,56 @@
        data-ad-slot="2222222222"></ins>
 </div>
 
-<footer class="text-center text-xs text-slate-400 py-4">
-  100% client-side. No servers, no databases — the puzzle key travels inside the image file itself.
+<footer class="text-center text-xs text-slate-500 py-6 border-t border-slate-200 bg-white/50 space-y-3">
+  <div>
+    100% client-side. No servers, no databases — the puzzle key travels inside the image file itself.
+  </div>
+  <div class="flex justify-center gap-4 text-slate-600 font-medium">
+    <button onclick="document.getElementById('aboutModal').showModal()" class="hover:underline">About</button>
+    <span>•</span>
+    <button onclick="document.getElementById('contactModal').showModal()" class="hover:underline">Contact</button>
+    <span>•</span>
+    <button onclick="document.getElementById('privacyModal').showModal()" class="hover:underline">Privacy Policy</button>
+  </div>
 </footer>
+
+<!-- ======================= MODALS ======================= -->
+<dialog id="aboutModal">
+  <div class="modal-header">
+    <h3>About Broshere</h3>
+    <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+    <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+    <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+  </div>
+</dialog>
+
+<dialog id="contactModal">
+  <div class="modal-header">
+    <h3>Contact</h3>
+    <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
+  </div>
+</dialog>
+
+<dialog id="privacyModal">
+  <div class="modal-header">
+    <h3>Privacy Policy</h3>
+    <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+    <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+    <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+    <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+    <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
+  </div>
+</dialog>
 
 <!-- ======================= REWARDED VIDEO AD MODAL ======================= -->
 <div id="rewardedAdModal" class="hidden fixed inset-0 bg-black/70 z-[70] grid place-items-center p-4">

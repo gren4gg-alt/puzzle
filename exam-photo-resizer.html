@@ -7,8 +7,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <!-- Google AdSense — replace with your real publisher id before going live -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
-     crossorigin="anonymous"></script>
 
 <style>
   :root{
@@ -24,7 +22,7 @@
   #cropCanvas:active{ cursor: grabbing; }
   input[type=range]{ accent-color: var(--accent); }
 
-  /* ================= Workshop theme (visual only — no functional change) ================= */
+  /* ================= Workshop theme ================= */
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
   :root{
@@ -91,6 +89,15 @@
     letter-spacing:.03em;
   }
 
+  /* Modal styling */
+  dialog::backdrop {
+    background: rgba(36, 33, 27, 0.4);
+    backdrop-filter: blur(2px);
+  }
+  dialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -119,7 +126,7 @@
   </div>
 </header>
 
-<main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1">
+<main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1 space-y-8">
   <div class="grid md:grid-cols-2 gap-6">
 
     <!-- ======================= CONTROLS ======================= -->
@@ -189,6 +196,38 @@
       <p id="cropCaption" class="hidden text-xs text-slate-400 text-center">This frame shows exactly what will be kept — drag the photo underneath it.</p>
     </div>
   </div>
+
+  <!-- ======================= ADSENSE CONTENT SECTION ======================= -->
+  <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 text-slate-700 text-sm leading-relaxed">
+    <article>
+      <h2 class="text-xl font-display font-bold text-slate-900 mb-3">How to Use the Exam Photo Resizer Tool</h2>
+      <p class="mb-4">Online application portals for government exams, recruitment drives, and official cards (such as SSC, UPSC, Railway, IBPS, and PAN) require uploaded images to adhere to precise physical dimensions and file size limits. This online cropping and resizing tool helps you transform any personal photo or signature image into an officially compliant file in just a few clicks.</p>
+
+      <ol class="list-decimal list-inside space-y-2 mb-4 font-medium">
+        <li><strong>Select Your Requirements:</strong> Choose a standard preset from the dropdown menu (e.g., standard 3.5 × 4.5 cm passport photo, 2.5 × 3.5 cm PAN photo, or 3.5 × 1.5 cm signature). You can also choose "Custom size..." to manually enter width and height.</li>
+        <li><strong>Configure DPI and File Size:</strong> Input the required DPI (dots per inch)—most government portals request 200 DPI—and set your maximum file size threshold (usually between 20 KB and 50 KB).</li>
+        <li><strong>Upload Your Image:</strong> Click the file input button to select a JPEG or PNG image from your computer or smartphone.</li>
+        <li><strong>Adjust and Position:</strong> Click and drag the image inside the crop canvas to frame your face or signature properly. Use the zoom slider to resize the image or fine-tune alignment using your keyboard arrow keys.</li>
+        <li><strong>Crop &amp; Download:</strong> Click the "Crop, resize &amp; download" button. The system automatically processes the crop, compresses the file to stay below your requested max size in kilobytes (KB), and downloads the file instantly.</li>
+      </ol>
+    </article>
+
+    <hr class="border-slate-200" />
+
+    <article>
+      <h3 class="text-lg font-display font-bold text-slate-900 mb-2">Frequently Asked Questions (FAQ)</h3>
+      <div class="space-y-3">
+        <div>
+          <p class="font-semibold text-slate-900">Is my personal photo uploaded to a server?</p>
+          <p class="text-slate-600">No. All cropping, resizing, and JPEG compression operations happen 100% locally in your web browser using HTML5 Canvas technology. Your photos and signature files never leave your device.</p>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-900">How does the tool ensure the file size remains under the limit?</p>
+          <p class="text-slate-600">The application uses an automated binary search algorithm to calculate the optimal JPEG image compression ratio. It balances maximum visual clarity with strict compliance to your target file size (in KB).</p>
+        </div>
+      </div>
+    </article>
+  </section>
 </main>
 
 <div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
@@ -196,9 +235,55 @@
        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="8888888888"></ins>
 </div>
 
-<footer class="text-center text-xs text-slate-400 py-4">
-  100% client-side. Your photo never leaves your device.
+<!-- ======================= FOOTER WITH DIALOG TRIGGERS ======================= -->
+<footer class="text-center text-xs text-slate-400 py-6 space-y-3">
+  <div>100% client-side. Your photo never leaves your device.</div>
+  <div class="flex justify-center items-center gap-4 text-slate-500">
+    <button onclick="document.getElementById('aboutModal').showModal()" class="hover:underline">About</button>
+    <span>•</span>
+    <button onclick="document.getElementById('contactModal').showModal()" class="hover:underline">Contact</button>
+    <span>•</span>
+    <button onclick="document.getElementById('privacyModal').showModal()" class="hover:underline">Privacy Policy</button>
+  </div>
 </footer>
+
+<!-- ======================= MODAL DIALOGS ======================= -->
+<dialog id="aboutModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
+  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
+    <h3 class="font-display font-bold text-lg text-slate-900">About Broshere</h3>
+    <button onclick="document.getElementById('aboutModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+  </div>
+  <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
+    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+    <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+    <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+  </div>
+</dialog>
+
+<dialog id="contactModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
+  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
+    <h3 class="font-display font-bold text-lg text-slate-900">Contact</h3>
+    <button onclick="document.getElementById('contactModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+  </div>
+  <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
+    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong class="text-slate-900">podugenerations@gmail.com</strong></p>
+  </div>
+</dialog>
+
+<dialog id="privacyModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
+  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
+    <h3 class="font-display font-bold text-lg text-slate-900">Privacy Policy</h3>
+    <button onclick="document.getElementById('privacyModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+  </div>
+  <div class="space-y-3 text-sm text-slate-600 leading-relaxed max-h-[70vh] overflow-y-auto pr-1">
+    <p><strong class="text-slate-900">What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+    <p><strong class="text-slate-900">Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong class="text-slate-900">google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+    <p><strong class="text-slate-900">Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+    <p><strong class="text-slate-900">Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+    <p><strong class="text-slate-900">Contact:</strong> Questions about this policy can be sent to <strong class="text-slate-900">podugenerations@gmail.com</strong>.</p>
+  </div>
+</dialog>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -249,13 +334,11 @@ updateDimsInfo();
 
 /* =====================================================================
    CROP FRAME — a fixed on-screen rectangle at the target aspect ratio.
-   The uploaded photo is drawn behind it and can be dragged/zoomed; the
-   canvas itself clips to the frame, so what you see IS what gets kept.
    ===================================================================== */
 let sourceImage = null;
-let displayScale = 1;      // current zoom (>= cover-fit baseline)
-let coverScale = 1;        // baseline scale so the image fully covers the frame
-let offsetX = 0, offsetY = 0; // top-left of the image, in canvas px
+let displayScale = 1;      
+let coverScale = 1;        
+let offsetX = 0, offsetY = 0; 
 let dragging = false, dragStartX = 0, dragStartY = 0, startOffX = 0, startOffY = 0;
 
 const canvas = $("cropCanvas");
@@ -300,7 +383,7 @@ $("resetBtn").addEventListener("click", () => {
   $("resultStats").classList.add("hidden");
 });
 
-// Keyboard nudging: focus the crop frame and use arrow keys to fine-tune position.
+// Keyboard nudging
 canvas.addEventListener("keydown", (e) => {
   if (!sourceImage) return;
   const step = e.shiftKey ? 10 : 2;
@@ -359,7 +442,7 @@ $("zoomSlider").addEventListener("input", () => {
   draw();
 });
 
-// ---- drag to reposition (mouse + touch via Pointer Events) ----
+// Drag to reposition
 canvas.addEventListener("pointerdown", (e) => {
   if (!sourceImage) return;
   dragging = true;
@@ -379,9 +462,7 @@ canvas.addEventListener("pointermove", (e) => {
 });
 
 /* =====================================================================
-   GENERATE: redraw the exact same crop at the true target pixel size
-   (derived from cm + DPI), then iteratively reduce JPEG quality until
-   the file fits under the requested max KB.
+   GENERATE AND COMPRESS
    ===================================================================== */
 $("generateBtn").addEventListener("click", () => {
   if (!sourceImage) return;
@@ -389,9 +470,7 @@ $("generateBtn").addEventListener("click", () => {
   const { pxW, pxH } = updateDimsInfo();
   const maxKb = parseInt($("maxKbInput").value, 10) || 50;
 
-  // Map the on-screen crop (offsetX/Y, displayScale, canvas size) to the
-  // full-resolution export canvas at the same relative position/zoom.
-  const factor = pxW / canvas.width; // canvas.width/height share the same aspect as pxW/pxH
+  const factor = pxW / canvas.width;
   const exportCanvas = document.createElement("canvas");
   exportCanvas.width = pxW;
   exportCanvas.height = pxH;
@@ -423,7 +502,6 @@ $("generateBtn").addEventListener("click", () => {
   });
 });
 
-// Binary-searches JPEG quality so the exported blob lands at/under maxKb.
 function compressToTargetSize(sourceCanvas, maxKb, done) {
   const maxBytes = maxKb * 1024;
   let lo = 0.1, hi = 0.95, bestBlob = null, bestQ = hi;
@@ -435,14 +513,12 @@ function compressToTargetSize(sourceCanvas, maxKb, done) {
       tries++;
       if (blob.size <= maxBytes) {
         bestBlob = blob; bestQ = q;
-        lo = q; // room to try higher quality while still under budget
+        lo = q;
       } else {
-        hi = q; // too big, go lower
+        hi = q;
       }
       if (tries >= MAX_TRIES) {
         if (!bestBlob) {
-          // Even the lowest quality tried was over budget — ship it anyway
-          // rather than fail silently; the UI flags this to the user.
           sourceCanvas.toBlob((finalBlob) => done(finalBlob, lo), "image/jpeg", lo);
         } else {
           done(bestBlob, bestQ);

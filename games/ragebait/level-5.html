@@ -18,6 +18,8 @@
     <div class="right">
       <div class="stat">FALLS <b id="deathCount">0</b></div>
       <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+            <button class="icon-btn" id="btnHelp" title="How to Play (H)">❓</button>
+
       <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
       <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
       <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
@@ -55,9 +57,52 @@
       </div>
       <div class="btn-row">
         <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="btnHelpMenu">❓ How to Play</button>
         <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
       </div>
     </div>
+    <div class="screen hidden" id="helpScreen">
+      <h1 id="helpTitle">HOW TO PLAY</h1>
+      <div id="helpBody"></div>
+      <div class="btn-row"><button class="big-btn" id="closeHelpBtn">Got it</button></div>
+    </div>
+
+    <dialog id="aboutModal">
+      <div class="modal-header">
+        <h3>About Broshere</h3>
+        <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+        <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+        <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+      </div>
+    </dialog>
+
+    <dialog id="contactModal">
+      <div class="modal-header">
+        <h3>Contact</h3>
+        <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+        <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
+      </div>
+    </dialog>
+
+    <dialog id="privacyModal">
+      <div class="modal-header">
+        <h3>Privacy Policy</h3>
+        <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+        <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+        <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+        <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+        <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
+      </div>
+    </dialog>
   </div>
 
   <div id="footer">pendulums linger at the peaks — that's your window</div>
@@ -72,6 +117,18 @@
 // ==== LEVEL 5 — pendulum swings over the valley (gentler arcs) ====
 const LEVEL_ID='level-5';
 const LEVEL_TITLE='DRIFT HOP';
+
+/* ---- HOW TO PLAY — edit this per level, everything else is boilerplate ---- */
+const HELP_HTML=`
+  <p>Guide <b>Momo</b> across swinging <b>pendulums</b>. Each platform hangs from an
+  anchor and sweeps a slow arc — it lingers at the peaks and races through the bottom.</p>
+  <p>Wait for two arcs to line up, then hop. Jumping off one while it's moving fast
+  flings you further, so the bottom of a swing can be your best launch point.</p>
+  <p><b>Controls</b><br>
+  Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp;
+  Pause: <b>P</b> &nbsp;·&nbsp; Mute: <b>M</b> &nbsp;·&nbsp; Fullscreen: <b>F</b> &nbsp;·&nbsp;
+  How to Play: <b>H</b></p>
+`;
 const PEND_TUNING={count:8, reachMul:0.58, arm:[60,90], ang:[0.45,0.70]};
 function winFlavorText(deaths){
   return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles each pendulum's arm length, swing angle, and speed.`;
@@ -81,7 +138,6 @@ window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,
 window.SHOW_NEBULA = true;
 window.SHOW_STARS = false;
 window.SHOW_MOTES = false;
-window.MUSIC_THEME = 'mountain';
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
 window.LAND_STYLE = { body:'#120e1a' };
 // mono silhouette palette for the pendulum discs — golden valley dusk,
@@ -316,23 +372,95 @@ function drawPlatform(p,t){
   ctx.beginPath();ctx.arc(p.anchorX,p.anchorY,4*scale,0,Math.PI*2);ctx.fill();
   ctx.restore();
 
-  ctx.save();
-  if(p.glitching){ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;}
-  else{ctx.shadowColor=ENV.rimSoft;ctx.shadowBlur=12;}
-  ctx.fillStyle=ENV.ink;
-  ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-
-  // rim light keeps the near-black silhouette legible against the ridges
-  ctx.strokeStyle=p.glitching?`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`:ENV.rim;
-  ctx.lineWidth=Math.max(1.5,p.size*0.055);
-  ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.stroke();
+  // Disc never changes size, so bake its body+glow+rim to an offscreen
+  // sprite once and just blit it every frame — turns a live shadowBlur
+  // recompute (CPU-heavy) into a cheap GPU texture draw. Glitching pulses
+  // the glow/colour every frame, so that state is never cached.
+  if(p.glitching){
+    ctx.save();
+    ctx.shadowColor='#ff2e6e';ctx.shadowBlur=20+Math.sin(t*0.06)*10;
+    ctx.fillStyle=ENV.ink;
+    ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=`rgba(255,46,110,${0.6+0.35*Math.sin(t*0.08)})`;
+    ctx.lineWidth=Math.max(1.5,p.size*0.055);
+    ctx.beginPath();ctx.arc(cx,cy,p.size/2,0,Math.PI*2);ctx.stroke();
+  }else{
+    const spr=getDiscSprite(p, fxGlow());
+    ctx.drawImage(spr, cx-spr.width/2, cy-spr.height/2);
+  }
 
   if(player.visited.has(p)){
     ctx.fillStyle=ENV.rimSoft;ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.textAlign='center';
     ctx.fillText('✦',cx,p.y-p.size*0.28);
   }
 }
+
+// Bake-once, blit-forever cache for the (static-size) pendulum disc body.
+// Keyed by glow on/off so a quality-governor change still rebakes once.
+function getDiscSprite(p, glowOn){
+  const key=glowOn?'g1':'g0';
+  if(p._discKey===key && p._discSprite) return p._discSprite;
+  const PAD=26, S=Math.ceil(p.size+PAD*2);
+  const c=document.createElement('canvas'); c.width=S; c.height=S;
+  const g=c.getContext('2d'), ccx=S/2, ccy=S/2;
+  g.save();
+  if(glowOn){ g.shadowColor=ENV.rimSoft; g.shadowBlur=12; }
+  g.fillStyle=ENV.ink;
+  g.beginPath();g.arc(ccx,ccy,p.size/2,0,Math.PI*2);g.fill();
+  g.restore();
+  g.strokeStyle=ENV.rim;
+  g.lineWidth=Math.max(1.5,p.size*0.055);
+  g.beginPath();g.arc(ccx,ccy,p.size/2,0,Math.PI*2);g.stroke();
+  p._discSprite=c; p._discKey=key;
+  return c;
+}
+
+/* ==== HOW TO PLAY — boilerplate, copy as-is into every level ====
+   Reuses the existing Pause button/screen so it doesn't need to know
+   anything about engine.js internals. Only HELP_HTML above and the
+   <h1 id="helpTitle"> text need to change per level. */
+(function(){
+  const btnHelp=document.getElementById('btnHelp');
+  const btnHelpMenu=document.getElementById('btnHelpMenu');
+  const closeHelpBtn=document.getElementById('closeHelpBtn');
+  const helpScreen=document.getElementById('helpScreen');
+  const helpBody=document.getElementById('helpBody');
+  const pauseScreen=document.getElementById('pauseScreen');
+  const overlay=document.getElementById('overlay');
+  const btnPause=document.getElementById('btnPause');
+  helpBody.innerHTML=HELP_HTML;
+
+  let autoPaused=false;
+
+  function openHelp(){
+    const menuShowing=!overlay.classList.contains('hidden');
+    const alreadyPaused=!pauseScreen.classList.contains('hidden');
+    if(!menuShowing && !alreadyPaused && btnPause){
+      btnPause.click();       // pause the running game via the existing pause logic
+      autoPaused=true;
+    }
+    pauseScreen.classList.add('hidden'); // show help instead of the pause screen underneath
+    helpScreen.classList.remove('hidden');
+  }
+
+  function closeHelp(){
+    helpScreen.classList.add('hidden');
+    if(autoPaused && btnPause){
+      btnPause.click();       // resume, since we're the ones who paused it
+      autoPaused=false;
+    }
+  }
+
+  if(btnHelp) btnHelp.addEventListener('click', openHelp);
+  if(btnHelpMenu) btnHelpMenu.addEventListener('click', openHelp);
+  if(closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelp);
+
+  window.addEventListener('keydown', e=>{
+    if(e.key==='h'||e.key==='H'){ e.preventDefault(); openHelp(); }
+    else if(e.key==='Escape' && !helpScreen.classList.contains('hidden')){ closeHelp(); }
+  });
+})();
 
 bootGame();
 </script>

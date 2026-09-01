@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
      crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -18,6 +18,8 @@
     <div class="right">
       <div class="stat">FALLS <b id="deathCount">0</b></div>
       <button class="icon-btn" id="btnHome" title="Home">🏠</button>
+            <button class="icon-btn" id="btnHelp" title="How to Play (H)">❓</button>
+
       <button class="icon-btn" id="btnMute" title="Mute (M)">🔊</button>
       <button class="icon-btn" id="btnPause" title="Pause (P)">⏸</button>
       <button class="icon-btn" id="btnFs" title="Fullscreen (F)">⛶</button>
@@ -55,9 +57,52 @@
       </div>
       <div class="btn-row">
         <button class="big-btn" id="startBtn">▶ Start</button>
+        <button class="ghost-btn" id="btnHelpMenu">❓ How to Play</button>
         <button class="ghost-btn" id="homeBtnMenu">🏠 Home</button>
       </div>
     </div>
+    <div class="screen hidden" id="helpScreen">
+      <h1 id="helpTitle">HOW TO PLAY</h1>
+      <div id="helpBody"></div>
+      <div class="btn-row"><button class="big-btn" id="closeHelpBtn">Got it</button></div>
+    </div>
+
+    <dialog id="aboutModal">
+      <div class="modal-header">
+        <h3>About Broshere</h3>
+        <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+        <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+        <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+      </div>
+    </dialog>
+
+    <dialog id="contactModal">
+      <div class="modal-header">
+        <h3>Contact</h3>
+        <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+        <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
+      </div>
+    </dialog>
+
+    <dialog id="privacyModal">
+      <div class="modal-header">
+        <h3>Privacy Policy</h3>
+        <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+        <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+        <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+        <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+        <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
+      </div>
+    </dialog>
   </div>
 
   <div id="footer">twelve islands, longest swings yet — patience over speed</div>
@@ -72,6 +117,20 @@
 // ==== LEVEL 7 — piston obstacles + mountain valley scenery ====
 const LEVEL_ID='level-7';
 const LEVEL_TITLE='DRIFT HOP';
+
+/* ---- HOW TO PLAY — edit this per level, everything else is boilerplate ---- */
+const HELP_HTML=`
+  <p>Twelve <b>piston</b> islands, swinging across even more of the sky than before.
+  Plant on your current platform, watch the next swing back into reach, then time
+  your hop.</p>
+  <p>The wind picks up the higher you climb — watch for gusts blowing leaves sideways
+  as you time each jump. Some platforms also shrink before regrowing, so watch for
+  the yellow warning glow.</p>
+  <p><b>Controls</b><br>
+  Move: <b>A/D</b> or <b>←/→</b> &nbsp;·&nbsp; Hop: <b>Space</b> &nbsp;·&nbsp;
+  Pause: <b>P</b> &nbsp;·&nbsp; Mute: <b>M</b> &nbsp;·&nbsp; Fullscreen: <b>F</b> &nbsp;·&nbsp;
+  How to Play: <b>H</b></p>
+`;
 function winFlavorText(deaths){
   return `Momo slipped through the portal after <b>${deaths}</b> fall${deaths===1?'':'s'}. Every run reshuffles the drift paths and shrink timers, near the mountain's summit.`;
 }
@@ -84,7 +143,6 @@ window.SKY_THEME = { sky:['#cfe8ff','#bcdcff','#e9c9a0','#f2b98a'], nebula:'255,
 window.SHOW_NEBULA = true;
 window.SHOW_STARS = false;
 window.SHOW_MOTES = false;
-window.MUSIC_THEME = 'mountain';
 window.TANTRUMS_ENABLED = true; // platforms occasionally throw a fit — reverse-glow and can't be landed on until it passes
 window.PLATFORM_STYLE = { body:'#1c130e', rim:'rgba(255,179,122,0.85)', glow:'#ffb37a' };
 window.LAND_STYLE = { body:'#140d09' };
@@ -293,6 +351,52 @@ function drawPlatform(p,t){
     }
   }
 }
+/* ==== HOW TO PLAY — boilerplate, copy as-is into every level ====
+   Reuses the existing Pause button/screen so it doesn't need to know
+   anything about engine.js internals. Only HELP_HTML above and the
+   <h1 id="helpTitle"> text need to change per level. */
+(function(){
+  const btnHelp=document.getElementById('btnHelp');
+  const btnHelpMenu=document.getElementById('btnHelpMenu');
+  const closeHelpBtn=document.getElementById('closeHelpBtn');
+  const helpScreen=document.getElementById('helpScreen');
+  const helpBody=document.getElementById('helpBody');
+  const pauseScreen=document.getElementById('pauseScreen');
+  const overlay=document.getElementById('overlay');
+  const btnPause=document.getElementById('btnPause');
+  helpBody.innerHTML=HELP_HTML;
+
+  let autoPaused=false;
+
+  function openHelp(){
+    const menuShowing=!overlay.classList.contains('hidden');
+    const alreadyPaused=!pauseScreen.classList.contains('hidden');
+    if(!menuShowing && !alreadyPaused && btnPause){
+      btnPause.click();       // pause the running game via the existing pause logic
+      autoPaused=true;
+    }
+    pauseScreen.classList.add('hidden'); // show help instead of the pause screen underneath
+    helpScreen.classList.remove('hidden');
+  }
+
+  function closeHelp(){
+    helpScreen.classList.add('hidden');
+    if(autoPaused && btnPause){
+      btnPause.click();       // resume, since we're the ones who paused it
+      autoPaused=false;
+    }
+  }
+
+  if(btnHelp) btnHelp.addEventListener('click', openHelp);
+  if(btnHelpMenu) btnHelpMenu.addEventListener('click', openHelp);
+  if(closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelp);
+
+  window.addEventListener('keydown', e=>{
+    if(e.key==='h'||e.key==='H'){ e.preventDefault(); openHelp(); }
+    else if(e.key==='Escape' && !helpScreen.classList.contains('hidden')){ closeHelp(); }
+  });
+})();
+
 bootGame();
 </script>
 </body>

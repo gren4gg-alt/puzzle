@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Media Compressor — shrink photos, audio & video in your browser</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Google AdSense — replace with your real publisher id before going live -->
-
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
      crossorigin="anonymous"></script>
+<!-- Google AdSense — replace with your real publisher id before going live -->
+
 <style>
   :root{
     --ink:#1b1230;
@@ -93,6 +92,53 @@
     letter-spacing:.03em;
   }
 
+  /* Dialog Modal Styles */
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-header h3 {
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+  .btn-close {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #7a725f;
+  }
+  .btn-close:hover {
+    color: var(--ink);
+  }
+  .modal-body {
+    padding: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .modal-body p {
+    margin-bottom: 0.75rem;
+  }
+  .modal-body p:last-child {
+    margin-bottom: 0;
+  }
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -215,8 +261,6 @@
         </div>
         <p id="audioProgressLabel" class="text-xs text-slate-500"></p>
 
-        <!-- Video ad shown only while compression is running. Swap #audioAdSlot's
-             contents for your real ad SDK embed (e.g. Google Ad Manager video ad). -->
         <div class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
           <div id="audioAdSlot">Ad playing while your audio compresses…</div>
         </div>
@@ -286,8 +330,6 @@
         </div>
         <p id="videoProgressLabel" class="text-xs text-slate-500"></p>
 
-        <!-- Video ad shown only while compression is running. Swap #videoAdSlot's
-             contents for your real ad SDK embed (e.g. Google Ad Manager video ad). -->
         <div class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
           <div id="videoAdSlot">Ad playing while your video compresses…</div>
         </div>
@@ -322,6 +364,50 @@
     </div>
   </section>
 
+  <!-- ======================= HOW TO USE SECTION ======================= -->
+  <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+    <h2 class="font-display text-xl font-bold border-b border-slate-200 pb-2">How to Use Media Compressor</h2>
+    
+    <p class="text-sm text-slate-600 leading-relaxed">
+      Media Compressor allows you to quickly shrink images, audio files, and videos directly inside your web browser. Because all re-encoding happens locally on your device using standard HTML5 APIs, your media files are never uploaded to any external server.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-6 pt-2">
+      <div class="space-y-2">
+        <h3 class="text-sm font-bold flex items-center gap-2">🖼️ Image Compression</h3>
+        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1.5 leading-relaxed">
+          <li>Select the <strong>Image</strong> tab.</li>
+          <li>Click <strong>Choose a photo</strong> or drag and drop an image file.</li>
+          <li>Select your target format (JPEG, WebP, or PNG).</li>
+          <li>Adjust the quality slider and set a maximum pixel dimension.</li>
+          <li>Click <strong>Download compressed image</strong>.</li>
+        </ol>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-sm font-bold flex items-center gap-2">🎵 Audio Compression</h3>
+        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1.5 leading-relaxed">
+          <li>Select the <strong>Audio</strong> tab.</li>
+          <li>Upload your target audio file.</li>
+          <li>Select your preferred bitrate (e.g., 64 kbps for voice, 128 kbps for music).</li>
+          <li>Click <strong>Start compressing</strong> to process the audio in real time.</li>
+          <li>Preview and download your compressed <code>.webm</code> audio file.</li>
+        </ol>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-sm font-bold flex items-center gap-2">🎬 Video Compression</h3>
+        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1.5 leading-relaxed">
+          <li>Select the <strong>Video</strong> tab.</li>
+          <li>Choose a video file to re-encode.</li>
+          <li>Select a maximum resolution (720p or 480p) and target bitrate.</li>
+          <li>Click <strong>Start compressing</strong>.</li>
+          <li>Preview the final video and click <strong>Download compressed video</strong>.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
@@ -329,9 +415,55 @@
        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="6666666666"></ins>
 </div>
 
-<footer class="text-center text-xs text-slate-400 py-4">
-  100% client-side. Files never leave your device.
+<!-- ======================= FOOTER WITH MODAL LINKS ======================= -->
+<footer class="text-center text-xs text-slate-500 py-6 space-y-3 border-t border-slate-200 bg-white/50">
+  <div class="flex justify-center items-center gap-4 font-medium">
+    <button onclick="document.getElementById('aboutModal').showModal()" class="hover:underline hover:text-slate-800">About</button>
+    <span>•</span>
+    <button onclick="document.getElementById('contactModal').showModal()" class="hover:underline hover:text-slate-800">Contact</button>
+    <span>•</span>
+    <button onclick="document.getElementById('privacyModal').showModal()" class="hover:underline hover:text-slate-800">Privacy Policy</button>
+  </div>
+  <p class="text-slate-400">100% client-side. Files never leave your device.</p>
 </footer>
+
+<!-- ======================= DIALOG MODALS ======================= -->
+<dialog id="aboutModal">
+  <div class="modal-header">
+    <h3>About Broshere</h3>
+    <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
+    <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
+    <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
+  </div>
+</dialog>
+
+<dialog id="contactModal">
+  <div class="modal-header">
+    <h3>Contact</h3>
+    <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
+    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
+  </div>
+</dialog>
+
+<dialog id="privacyModal">
+  <div class="modal-header">
+    <h3>Privacy Policy</h3>
+    <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
+    <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+    <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
+    <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
+    <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
+  </div>
+</dialog>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -345,8 +477,6 @@ function pctSaved(orig, now) {
   if (orig <= 0) return "0%";
   return Math.max(0, Math.round((1 - now / orig) * 100)) + "%";
 }
-// Scales w×h down (preserving aspect ratio) so the longer side is at most
-// maxDim. Never upscales, and 0/falsy maxDim means "keep original size".
 function fitWithinMax(w, h, maxDim) {
   if (!maxDim) return { w, h };
   const longer = Math.max(w, h);
@@ -355,9 +485,7 @@ function fitWithinMax(w, h, maxDim) {
   return { w: Math.round(w * scale), h: Math.round(h * scale) };
 }
 
-// =====================================================================
 // TAB SWITCHING
-// =====================================================================
 document.querySelectorAll(".mode-tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".mode-tab").forEach((b) => b.classList.remove("active"));
@@ -368,12 +496,7 @@ document.querySelectorAll(".mode-tab").forEach((btn) => {
   });
 });
 
-/* =====================================================================
-   IMAGE COMPRESSION
-   Pure Canvas API: draw the photo at (optionally smaller) dimensions,
-   then export via canvas.toBlob() with a quality setting. No libraries,
-   no uploads — this is a built-in browser capability.
-   ===================================================================== */
+// IMAGE COMPRESSION
 let imgFile = null, imgOriginalImage = null;
 
 function loadImageFile(file) {
@@ -392,7 +515,6 @@ $("imgFileInput").addEventListener("change", (e) => {
   loadImageFile(e.target.files[0]);
 });
 
-// Drag & drop support — purely additive convenience on top of the file input above.
 const imgDropzone = $("imgDropzone");
 ["dragenter", "dragover"].forEach((evt) => {
   imgDropzone.addEventListener(evt, (e) => {
@@ -455,15 +577,7 @@ $("imgDownloadBtn").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 });
 
-/* =====================================================================
-   AUDIO COMPRESSION
-   No third-party codec library. We decode the file with the Web Audio
-   API, play it back through a MediaStreamDestination, and use the
-   browser's own MediaRecorder (Opus encoder) to capture it at a lower
-   bitrate. This genuinely re-encodes the audio — it isn't a trick —
-   but it necessarily runs in real time (a 3-minute song takes ~3
-   minutes to compress) because MediaRecorder only records live streams.
-   ===================================================================== */
+// AUDIO COMPRESSION
 let audioFile = null;
 
 const audioRecorderSupported =
@@ -521,9 +635,6 @@ function compressAudio(file, bitrateKbps, onProgress) {
       source.buffer = audioBuffer;
 
       const dest = audioCtx.createMediaStreamDestination();
-      // Keep the context alive/audible-enough without blasting real audio —
-      // a near-silent gain node connected to speakers prevents some browsers
-      // from throttling background audio processing.
       const silentGain = audioCtx.createGain();
       silentGain.gain.value = 0.0001;
       source.connect(dest);
@@ -563,14 +674,7 @@ function compressAudio(file, bitrateKbps, onProgress) {
   });
 }
 
-/* =====================================================================
-   VIDEO COMPRESSION
-   Same real-time re-record principle as audio, using the browser's
-   native HTMLMediaElement.captureStream() + MediaRecorder (VP8/VP9 +
-   Opus). If a smaller resolution is requested we draw each frame to a
-   canvas and capture that canvas instead; otherwise we capture the
-   video element's stream directly. No external encoder libraries.
-   ===================================================================== */
+// VIDEO COMPRESSION
 let videoFile = null;
 
 const videoRecorderSupported =
@@ -623,8 +727,8 @@ function compressVideo(file, maxHeight, bitrateKbps, onProgress) {
   return new Promise((resolve, reject) => {
     const video = $("sourceVideoEl");
     video.src = URL.createObjectURL(file);
-    video.muted = false; // muted playback can suppress captured audio in some browsers
-    video.volume = 0;    // silence the actual speaker output instead
+    video.muted = false;
+    video.volume = 0;
     video.playsInline = true;
 
     video.onloadedmetadata = async () => {
@@ -638,7 +742,6 @@ function compressVideo(file, maxHeight, bitrateKbps, onProgress) {
         let outStream;
 
         if (w !== srcW || h !== srcH) {
-          // Downscaling requested: draw frames to a canvas and capture that.
           const canvas = $("videoCanvas");
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext("2d");

@@ -210,10 +210,22 @@ const MIN_VIEW_H=560;     // world height we always want visible
 let UI_GUTTER=0, PLAY_H=0; // bottom strip reserved for touch controls
 function resize(){
   SW=holder.clientWidth; SH=holder.clientHeight;
-  // Fill rate is the single biggest cost on phones: at dpr=2 every fullscreen
-  // fill (sky, nebula, vignette) shades 4x the pixels for detail nobody can
-  // see on a 5" panel mid-jump. 1.5 keeps text/rims crisp at ~44% the pixels.
-  const dpr=Math.min(devicePixelRatio||1, isTouch?1.5:2);
+  // Fill rate is the single biggest GPU cost, on phones AND on integrated-
+  // graphics laptops alike: at dpr=2 every fullscreen fill (sky, nebula,
+  // vignette) shades 4x the pixels for detail that's rarely visible at
+  // normal play distance. Capping at 1.5 everywhere (not just touch)
+  // keeps text/rims crisp at ~44% of dpr=2's pixel count.
+  //
+  // RENDER_SCALE goes a step further: it renders the actual canvas backing
+  // store BELOW the screen's own CSS pixel size, then lets the browser
+  // upscale it back up via canvas.style.width/height. That trades a
+  // slightly softer image for fewer pixels the GPU has to fill every
+  // single frame — 0.85 here means ~28% fewer total pixels than native.
+  // 1 = off (native sharpness). Turn it down further (e.g. 0.75) for more
+  // headroom on weaker GPUs, or set it back to 1 if smoothness is already
+  // fine and you'd rather keep full sharpness.
+  const RENDER_SCALE=0.75;
+  const dpr=Math.min(devicePixelRatio||1, 1.5)*RENDER_SCALE;
   canvas.width=SW*dpr; canvas.height=SH*dpr;
   canvas.style.width=SW+'px'; canvas.style.height=SH+'px';
   // On short screens (landscape phones) zoom the world out so a full jump
@@ -434,15 +446,9 @@ function drawBackgroundImage(t){
     else { ctx.drawImage(bgGlass,x,yOff,bw,bh); }
     ctx.restore();
   }
-  // vignette + lifted blacks completes the "under glass" read
-  const vkey=W+'x'+H;
-  if(_vigKey!==vkey){
-    const vg=ctx.createRadialGradient(W/2,H*0.45,H*0.25,W/2,H*0.5,H*0.95);
-    vg.addColorStop(0,'rgba(0,0,0,0)');
-    vg.addColorStop(1,'rgba(0,0,0,0.20)');
-    _vigGrad=vg;_vigKey=vkey;
-  }
-  if(FX>=1){ ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H); }
+  // Vignette moved to a CSS element (#vignetteOverlay, toggled once in
+  // bootGame()) — it's static screen-space darkening, so painting it in
+  // canvas every frame was pure waste. See bootGame() for where it's shown.
   return true;
 }
 
@@ -538,17 +544,14 @@ function addPuff(x,y,n,col){
 function drawGroundLand(p){
   const st=window.LAND_STYLE; if(!st) return false;
   const bottom=H+40;
+  // Left edge is pushed far off-screen (purely visual — the player never
+  // interacts with this side) so the ground always reaches past the left
+  // edge of the viewport, whatever the screen width. Right edge stays
+  // exactly at p.x+p.w, matching the real collision box precisely.
+  const left=p.x-600*scale;
   ctx.save();
-  // main mass, dropping off the bottom of the screen
   ctx.fillStyle=st.body;
-  ctx.beginPath();
-  ctx.moveTo(p.x-70*scale, bottom);
-  ctx.lineTo(p.x-70*scale, p.y+16*scale);
-  ctx.quadraticCurveTo(p.x-34*scale, p.y+2*scale, p.x, p.y);
-  ctx.lineTo(p.x+p.w, p.y);
-  ctx.quadraticCurveTo(p.x+p.w+30*scale, p.y+6*scale, p.x+p.w+52*scale, p.y+30*scale);
-  ctx.lineTo(p.x+p.w+52*scale, bottom);
-  ctx.closePath(); ctx.fill();
+  ctx.fillRect(left, p.y, (p.x+p.w)-left, bottom-p.y);
   // single flat colour — no rim line (set LAND_STYLE.rim to re-enable)
   if(st.rim){
     ctx.fillStyle=st.rim;
@@ -1454,6 +1457,17 @@ function bootGame(){
     c.innerHTML='<div id="countdownNum">3</div>';
     holder.appendChild(c);
   }
+  // Vignette: was a full-canvas radial-gradient fillRect every single
+  // frame (drawBackgroundImage, below) on every image-backed level. It's
+  // static screen-space darkening that never actually changes shape, so
+  // it's moved here — a plain CSS element the compositor paints once and
+  // then composites for free, instead of paying for it every frame.
+  if(!document.getElementById('vignetteOverlay')){
+    const v=document.createElement('div');
+    v.id='vignetteOverlay';
+    holder.appendChild(v);
+  }
+  if(window.BG_IMAGE) document.getElementById('vignetteOverlay').classList.add('show');
   resize();loadBackground();buildSky();buildAmbient();buildLevel();
   updateOrientationGate();
   // Arriving from a "Next Level" tap: the lock was dropped by navigation,

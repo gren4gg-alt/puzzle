@@ -222,6 +222,18 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
 .pm-home:hover { border-color:#9ca3af; color:#fff; }
 .pm-divider { height:1px; background:#1e2540; margin:4px 0; }
 
+/* ── HELP OVERLAY ── */
+#helpOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.92);
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  z-index:110; gap:14px; padding:24px; overflow-y:auto;
+}
+#helpOverlay .ov-title { color:#38bdf8; }
+.help-body { color:#9ca3af; font-size:13px; line-height:1.8; max-width:340px; text-align:left; }
+.help-body b { color:#fff; }
+.help-key { display:inline-block; background:#1e2540; border:1px solid #374151; border-radius:5px; padding:1px 6px; margin:0 2px; font-size:11px; color:#a78bfa; font-weight:700; }
+.help-pu { display:block; margin-top:4px; }
+
 /* ── KB HINT (hidden on touch-only devices) ── */
 @media (hover: none) and (pointer: coarse) { #kbHint { display: none !important; } }
 
@@ -270,6 +282,7 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
   </div>
   <div id="hudBtns">
     <button class="hud-icon-btn" id="backBtn" title="Back" onclick="goHome()">←</button>
+    <button class="hud-icon-btn" id="helpBtn" title="How to Play (H)" onclick="openHelp()">❓</button>
     <button class="hud-icon-btn" id="pauseBtn" title="Pause (P)" onclick="togglePause()">⏸</button>
     <button class="hud-icon-btn" id="fsBtn" title="Fullscreen (F)" onclick="toggleFullscreen()">⛶</button>
   </div>
@@ -373,7 +386,26 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
 
   <!-- Action buttons -->
   <button class="big-btn" id="startBtn" onclick="startGame()">▶ PLAY</button>
+  <button class="pm-btn pm-home" id="helpBtnMenu" style="width:220px;margin-top:2px;background:#0f1322;color:#38bdf8;border:1.5px solid #1e2540" onclick="openHelp()">❓ How to Play</button>
   <button class="pm-btn pm-home" id="homeBtn" style="display:none;width:220px;margin-top:2px" onclick="goHome()">🏠 Home</button>
+</div>
+
+<!-- HELP OVERLAY -->
+<div id="helpOverlay">
+  <div class="ov-title">❓ HOW TO PLAY</div>
+  <div class="help-body">
+    Letters fall from the top — tap them in order to spell a word, then hit <b>✓ GO</b> to submit it. Words of <b>3+ letters</b> count; longer words score more and add more time.<br><br>
+    <b>Controls</b><br>
+    Tap letter tiles to select them · <span class="help-key">⌫</span> removes the last letter · <span class="help-key">✕</span> clears the word.<br>
+    On a keyboard: type letters directly, <span class="help-key">Enter</span> submits, <span class="help-key">Backspace</span> deletes, <span class="help-key">Esc</span> clears (or resumes if paused), <span class="help-key">P</span> pauses, <span class="help-key">F</span> toggles fullscreen.<br><br>
+    <b>Combos & Time</b><br>
+    Chain correct words quickly to build a combo multiplier for bonus points. Wrong words cost you time, so submit only when you're sure.<br><br>
+    <b>Power-ups</b>
+    <span class="help-pu">💣 <b>Bomb</b> — clears a burst of letters off the board.</span>
+    <span class="help-pu">❄️ <b>Freeze</b> — pauses falling letters for a few seconds.</span>
+    <span class="help-pu">🔀 <b>Shuffle</b> — rerolls unselected letters into new ones.</span>
+  </div>
+  <button class="pm-btn pm-retry" style="width:220px" onclick="closeHelp()">Got it</button>
 </div>
 
 <!-- TOASTS -->
@@ -1097,6 +1129,26 @@ function togglePause() {
   }
 }
 
+let helpOpenedFromRunning = false;
+function openHelp() {
+  if (gameRunning && !gamePaused) {
+    helpOpenedFromRunning = true;
+    gamePaused = true;
+    cancelAnimationFrame(animFrame);
+  }
+  document.getElementById('helpOverlay').style.display = 'flex';
+}
+
+function closeHelp() {
+  document.getElementById('helpOverlay').style.display = 'none';
+  if (helpOpenedFromRunning) {
+    helpOpenedFromRunning = false;
+    gamePaused = false;
+    lastTime = performance.now();
+    animFrame = requestAnimationFrame(loop);
+  }
+}
+
 function retryFromPause() {
   // Close pause, reset and restart
   gamePaused = false;
@@ -1150,15 +1202,22 @@ document.addEventListener('keydown', e => {
   // Backspace removes last selected letter
   if (e.key === 'Backspace') { e.preventDefault(); backspaceLetter(); return; }
 
-  // Escape clears word OR resumes if paused
+  // Escape closes help, OR resumes if paused, OR clears word
   if (e.key === 'Escape') {
+    if (document.getElementById('helpOverlay').style.display === 'flex') { closeHelp(); return; }
     if (gamePaused) { togglePause(); return; }
     clearWord(); return;
   }
-  // P = pause/resume
-  if (e.key === 'p' || e.key === 'P') { togglePause(); return; }
-  // F = fullscreen
-  if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
+  // P/F/H double as letter keys — only trigger the shortcut if there's no
+  // matching falling tile to select (so mid-word letters always win)
+  const hasTile = (k) => !gamePaused && letters.some(l => l.type === 'normal' && !l.selected && l.char === k);
+
+  // P = pause/resume (unless a P tile is on screen)
+  if ((e.key === 'p' || e.key === 'P') && !hasTile('P')) { togglePause(); return; }
+  // F = fullscreen (unless an F tile is on screen)
+  if ((e.key === 'f' || e.key === 'F') && !hasTile('F')) { toggleFullscreen(); return; }
+  // H = help (unless an H tile is on screen)
+  if ((e.key === 'h' || e.key === 'H') && !hasTile('H')) { openHelp(); return; }
   // Block letter input while paused
   if (gamePaused) return;
 

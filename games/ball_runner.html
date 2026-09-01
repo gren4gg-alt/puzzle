@@ -67,6 +67,7 @@
     <div class="flex flex-col items-end gap-2">
       <div class="flex gap-2 pointer-events-auto">
         <button id="btnHome" title="Return home" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-sm flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">🏠</button>
+        <button id="btnHelp" title="How to play" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-sm flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">❓</button>
         <button id="btnPause" title="Pause" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-sm flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">⏸</button>
         <button id="btnMute" title="Mute" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-sm flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">🔊</button>
       </div>
@@ -98,8 +99,23 @@
     </p>
     <div class="flex gap-3 items-center flex-wrap justify-center">
       <button id="go" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full border-none cursor-pointer tracking-wider bg-[#ff5d3b] text-white shadow-[0_8px_18px_rgba(255,93,59,0.4)] hover:-translate-y-0.5 hover:scale-105 transition-all duration-150">START RUN</button>
+      <button id="btnHelpMenu" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full cursor-pointer tracking-wider bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:-translate-y-0.5 transition-all duration-150">❓ HOW TO PLAY</button>
       <button id="homeBtnMenu" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full cursor-pointer tracking-wider bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:-translate-y-0.5 transition-all duration-150">🏠 HOME</button>
     </div>
+  </div>
+
+  <div id="helpModal" class="hidden opacity-0 pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center bg-[#0a0a0e]/90 gap-3.5 p-5 z-30 transition-all duration-[350ms]">
+    <h1 class="text-3xl sm:text-4xl font-black tracking-widest text-[#eef1f4] drop-shadow-[0_4px_0_#00f0ff]">HOW TO PLAY</h1>
+    <p class="m-0 opacity-90 max-w-[520px] leading-relaxed text-sm text-left">
+      Roll forever and dodge whatever the world throws at you. Distance is your score — the longer you survive, the higher it climbs.<br><br>
+      <b>Keyboard:</b><br>
+      <span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">W</span>/<span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">Space</span>/<span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">↑</span> Jump (tap twice to double-jump) · 
+      <span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">S</span>/<span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">↓</span> Duck · 
+      <span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">A</span><span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">D</span>/<span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">←</span><span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">→</span> Dodge left/right<br><br>
+      <b>Touch:</b> ◀▶ to move, ▲ to jump (double-tap for double-jump), ▼ to duck.<br><br>
+      Grab the 🛡️ shield pickups to survive one extra hit. Watch for the red warning flashes — they signal incoming spears or obstacles. Different biomes bring different hazards, so stay alert as the world changes.
+    </p>
+    <button id="closeHelp" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full border-none cursor-pointer tracking-wider bg-[#ff5d3b] text-white shadow-[0_8px_18px_rgba(255,93,59,0.4)] hover:-translate-y-0.5 hover:scale-105 transition-all duration-150">GOT IT</button>
   </div>
 
   <div id="pause-msg" class="hidden opacity-0 pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center bg-[#0a0a0e]/85 gap-3.5 p-5 z-20 transition-all duration-[350ms]">
@@ -131,6 +147,10 @@ const homeBtnMenu = document.getElementById('homeBtnMenu');
 const homeBtnPause = document.getElementById('homeBtnPause');
 const resumeBtn = document.getElementById('resumeBtn');
 const bestScoreHud = document.getElementById('bestScoreHud');
+const btnHelp = document.getElementById('btnHelp');
+const btnHelpMenu = document.getElementById('btnHelpMenu');
+const helpModal = document.getElementById('helpModal');
+const closeHelp = document.getElementById('closeHelp');
 
 // ============================================================
 // AUDIO — fully synthesized via Web Audio API (no sampled/licensed
@@ -484,8 +504,32 @@ btnMute.addEventListener('click', ()=>{
   btnMute.textContent = muted ? '🔇' : '🔊';
 });
 window.addEventListener('keydown', e=>{
-  if(e.code === 'Escape') togglePause();
+  if(e.code === 'Escape'){
+    if(!helpModal.classList.contains('hidden')){ closeHelpModal(); }
+    else togglePause();
+  }
 });
+
+let helpPausedFrom = null;
+function openHelpModal(){
+  if(['running','falling','crumbling','landing'].includes(state)){
+    helpPausedFrom = state;
+    state = 'paused';
+    SFX.stopMusic();
+  }
+  helpModal.classList.remove('hidden','pointer-events-none','opacity-0');
+}
+function closeHelpModal(){
+  helpModal.classList.add('hidden','pointer-events-none','opacity-0');
+  if(helpPausedFrom){
+    state = helpPausedFrom;
+    helpPausedFrom = null;
+    SFX.startMusic(biomeIdx);
+  }
+}
+btnHelp.addEventListener('click', ()=>{ SFX.click(); openHelpModal(); });
+btnHelpMenu.addEventListener('click', ()=>{ SFX.click(); openHelpModal(); });
+closeHelp.addEventListener('click', ()=>{ SFX.click(); closeHelpModal(); });
 
 function goHome(){
   window.location.href = 'gameindex.html';
