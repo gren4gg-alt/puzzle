@@ -14,11 +14,22 @@
 // alpha:false — the canvas is fully repainted every frame (sky fill covers
 // every pixel, see render()), so there's never anything beneath it that
 // needs compositing. This tells the browser it can skip that work and
-// often drop to a cheaper backing store. desynchronized:true reduces
-// input-to-photon latency on browsers that support it by letting the
-// canvas bypass the normal compositor sync where possible; both are no-ops
-// with zero visual difference where unsupported.
-const canvas=document.getElementById('game'), ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});
+// often drop to a cheaper backing store.
+//
+// desynchronized:true USED TO BE SET HERE AND IS THE BUG.
+// It asks the browser for a low-latency canvas: instead of the normal
+// "draw into a buffer, hand the finished buffer to the compositor" path,
+// the canvas gets its own swap chain that is presented as soon as possible.
+// Desktop Chrome on integrated graphics quietly ignores the hint and uses
+// the ordinary path, which is why the laptop looked perfect. Mobile GPU
+// drivers DO honour it, and there the buffers are recycled WITHOUT being
+// cleared and WITHOUT being fully synchronised with our draw calls — so the
+// screen shows torn halves of two different frames, or straight-up
+// uninitialised GPU memory. Uninitialised GPU memory is exactly the
+// "random blocks of wrong colour that change every frame" artifact.
+// It is a rendering hint worth a few ms of latency at best; it is not worth
+// this. Removed.
+const canvas=document.getElementById('game'), ctx=canvas.getContext('2d',{alpha:false});
 const holder=document.getElementById('canvasHolder');
 const overlay=document.getElementById('overlay'), pauseScreen=document.getElementById('pauseScreen');
 const overlayTitle=document.getElementById('overlayTitle'), overlayText=document.getElementById('overlayText');
@@ -208,6 +219,7 @@ let W,H,scale=1;          // W/H are VIRTUAL world dimensions
 let SW=0,SH=0,zoom=1;     // SW/SH are the real canvas pixels; zoom maps between them
 const MIN_VIEW_H=560;     // world height we always want visible
 let UI_GUTTER=0, PLAY_H=0; // bottom strip reserved for touch controls
+let _dprX=1,_dprY=1;      // device pixels per CSS pixel, per axis
 function resize(){
   SW=holder.clientWidth; SH=holder.clientHeight;
   // Fill rate is the single biggest GPU cost, on phones AND on integrated-
@@ -225,14 +237,34 @@ function resize(){
   // headroom on weaker GPUs, or set it back to 1 if smoothness is already
   // fine and you'd rather keep full sharpness.
   const RENDER_SCALE=0.75;
-  const dpr=Math.min(devicePixelRatio||1, 1.5)*RENDER_SCALE;
-  canvas.width=SW*dpr; canvas.height=SH*dpr;
+
+  // Mobile browsers fire resize/orientationchange while the layout is
+  // mid-flight, and holder.clientWidth/Height can legitimately read 0 for a
+  // frame or two (rotating, entering fullscreen, the URL bar collapsing).
+  // Assigning 0 to canvas.width destroys the backing store; every draw after
+  // that silently no-ops and whatever the compositor still has for that
+  // element gets shown instead — more coloured garbage. Bail and let the
+  // debounced handler try again once layout has settled.
+  if(!(SW>0)||!(SH>0)) return;
+
+  const rawDpr=Math.min(devicePixelRatio||1, 1.5)*RENDER_SCALE;
+  // The backing store must be a whole number of pixels. Assigning a
+  // fractional width (851*1.125 = 957.375) makes the browser truncate it, so
+  // the transform below paints a hair wider than the buffer actually is and
+  // the right/bottom edge keeps a strip that render() never writes to.
+  // Round the buffer, then derive the real scale FROM the rounded buffer so
+  // the two can't disagree.
+  const bw=Math.max(1,Math.round(SW*rawDpr));
+  const bh=Math.max(1,Math.round(SH*rawDpr));
+  const dprX=bw/SW, dprY=bh/SH;
+  canvas.width=bw; canvas.height=bh;
   canvas.style.width=SW+'px'; canvas.style.height=SH+'px';
   // On short screens (landscape phones) zoom the world out so a full jump
   // arc stays on screen instead of the character flying out of view.
   zoom = Math.min(1, SH/MIN_VIEW_H);
   W = SW/zoom; H = SH/zoom;              // everything else works in world units
-  ctx.setTransform(dpr*zoom,0,0,dpr*zoom,0,0);
+  ctx.setTransform(dprX*zoom,0,0,dprY*zoom,0,0);
+  _dprX=dprX; _dprY=dprY;   // kept so render() can clear in device pixels
   scale=Math.min(1,Math.max(0.7,W/720));
   // Reserve a gutter at the bottom for the on-screen controls so the world
   // never renders underneath them (standard mobile "safe play area").
@@ -405,15 +437,35 @@ function buildGlassLayer(){
   if(!bgReady||!bgImg) return;
   // scale to COVER the canvas: never let the art be shorter than the
   // viewport, and keep enough width that a single tile spans the screen
-  const scaleFit=Math.max(H/bgImg.height, W/bgImg.width);
+  let scaleFit=Math.max(H/bgImg.height, W/bgImg.width);
+  // Mobile GPUs cap both a single canvas dimension (commonly 4096, still
+  // 4096 on plenty of shipping Android parts) and total canvas area (iOS
+  // Safari is the strict one). Go over either and you don't get an
+  // exception — you get a canvas that is blank or filled with junk, which
+  // then gets tiled across the whole screen every frame. A tall source
+  // image on a wide landscape phone hits this easily. Scale down to fit
+  // instead; the layer is blurred and tinted anyway, nobody can tell.
+  const MAX_DIM=2048, MAX_AREA=2048*2048;
+  {
+    const dimCap=Math.min(MAX_DIM/(bgImg.width*scaleFit), MAX_DIM/(bgImg.height*scaleFit));
+    if(dimCap<1) scaleFit*=dimCap;
+    const area=(bgImg.width*scaleFit)*(bgImg.height*scaleFit);
+    if(area>MAX_AREA) scaleFit*=Math.sqrt(MAX_AREA/area);
+  }
   const h=Math.max(1,Math.round(bgImg.height*scaleFit));
   const w=Math.max(1,Math.round(bgImg.width*scaleFit));
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const g=c.getContext('2d');
   const blur=(window.GLASS_BLUR===undefined)?1.2:window.GLASS_BLUR;
-  if(blur>0 && 'filter' in g) g.filter=`blur(${blur}px)`;
+  // ctx.filter is unsupported on older iOS Safari and buggy on some Android
+  // WebViews; feature-detect properly instead of trusting `'filter' in g`,
+  // which is true even where assignment silently does nothing.
+  if(blur>0){
+    try{ g.filter=`blur(${blur}px)`; if(g.filter==='none') g.filter='none'; }
+    catch(e){ g.filter='none'; }
+  }
   g.drawImage(bgImg,0,0,w,h);
-  g.filter='none';
+  try{ g.filter='none'; }catch(e){}
   // frosted tint: pushes the art back and stops it competing with play
   const tint=window.GLASS_TINT||'rgba(120,150,190,0.10)';
   g.fillStyle=tint; g.fillRect(0,0,w,h);
@@ -430,7 +482,12 @@ function drawBackgroundImage(t){
   if(!bgReady||!bgGlass) return false;
   if(bgGlassH!==Math.round(H)) buildGlassLayer(); // re-bake after a resize
   if(!bgGlass) return false;
-  const bw=bgGlass.width;
+  // The baked layer can come out smaller than the viewport if it had to be
+  // clamped to a GPU-safe size (see buildGlassLayer). Scale it back up at
+  // draw time so it always covers the full height — otherwise the top strip
+  // of the screen is left unpainted every frame.
+  const cover=Math.max(1, H/bgGlass.height);
+  const bw=Math.ceil(bgGlass.width*cover);
   const par=(window.BG_PARALLAX===undefined)?0.25:window.BG_PARALLAX;
   const drift=(window.BG_DRIFT===undefined)?0.006:window.BG_DRIFT; // keeps moving while you wait
   let off=(camX*par + t*drift) % (bw*2);
@@ -441,7 +498,7 @@ function drawBackgroundImage(t){
     if(x>W||x+bw<0) continue;
     const flipped=((k%2)+2)%2===1;
     ctx.save();
-    const bh=bgGlass.height, yOff=H-bh; // anchor to bottom: terrain stays in frame
+    const bh=Math.ceil(bgGlass.height*cover), yOff=H-bh; // anchor to bottom: terrain stays in frame
     if(flipped){ ctx.translate(x+bw,0); ctx.scale(-1,1); ctx.drawImage(bgGlass,0,yOff,bw,bh); }
     else { ctx.drawImage(bgGlass,x,yOff,bw,bh); }
     ctx.restore();
@@ -1237,6 +1294,23 @@ function drawPortal(t,wx,wy,r){
 let _skyGrad=null,_skyKey='',_nebGrad=null,_nebKey='';
 const _onScreen=[];
 function render(t){
+  // Belt-and-braces opaque clear of the ENTIRE backing store, in raw device
+  // pixels, before anything else touches it. The code below does paint over
+  // every pixel in the normal case, but "the normal case" is doing a lot of
+  // work: the sky fill is skipped when a background image is used, the image
+  // tiles are anchored bottom-left and rely on the glass layer being at least
+  // as big as the viewport, and any of that can be one frame stale right
+  // after a rotate. On a desktop compositor a missed pixel just shows the
+  // previous frame and nobody notices. On mobile it shows whatever was last
+  // in that block of GPU memory. One fillRect per frame is a rounding error
+  // in the budget and removes the entire class of problem.
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle='#0d0720';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.restore();
+
   const TH=window.SKY_THEME||{sky:['#150c2b','#2d1b4e','#4a2c6d','#6b3a72'],nebula:'185,139,255'};
   const usedImage = drawBackgroundImage(t);
   if(!usedImage){
