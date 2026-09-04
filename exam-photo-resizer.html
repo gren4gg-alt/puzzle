@@ -6,8 +6,6 @@
 <title>Exam Photo Resizer — crop to exact cm size for government forms</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Google AdSense — replace with your real publisher id before going live -->
-
 <style>
   :root{
     --ink:#1b1230;
@@ -102,10 +100,19 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-<!-- ======================= TOP AD BANNER ======================= -->
+<!-- ======================= TOP ADSTERRA AD BANNER ======================= -->
 <div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
-  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
-       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="7777777777"></ins>
+  <script type="text/javascript">
+    atOptions = {
+      'key' : 'YOUR_ADSTERRA_KEY_1',
+      'format' : 'iframe',
+      'height' : 90,
+      'width' : 728,
+      'params' : {}
+    };
+  </script>
+<script async="async" data-cfasync="false" src="https://pl31179397.profitableratecpmnetwork.com/a2c6f807ae2536b6a5505bc22f7ff1f2/invoke.js"></script>
+<div id="container-a2c6f807ae2536b6a5505bc22f7ff1f2"></div>
 </div>
 
 <!-- ======================= HEADER ======================= -->
@@ -197,7 +204,7 @@
     </div>
   </div>
 
-  <!-- ======================= ADSENSE CONTENT SECTION ======================= -->
+  <!-- ======================= CONTENT SECTION ======================= -->
   <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 text-slate-700 text-sm leading-relaxed">
     <article>
       <h2 class="text-xl font-display font-bold text-slate-900 mb-3">How to Use the Exam Photo Resizer Tool</h2>
@@ -230,9 +237,19 @@
   </section>
 </main>
 
+<!-- ======================= BOTTOM ADSTERRA AD BANNER ======================= -->
 <div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
-  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px"
-       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="8888888888"></ins>
+  <script type="text/javascript">
+    atOptions = {
+      'key' : 'YOUR_ADSTERRA_KEY_2',
+      'format' : 'iframe',
+      'height' : 90,
+      'width' : 728,
+      'params' : {}
+    };
+  </script>
+<script async="async" data-cfasync="false" src="https://pl31179397.profitableratecpmnetwork.com/a2c6f807ae2536b6a5505bc22f7ff1f2/invoke.js"></script>
+<div id="container-a2c6f807ae2536b6a5505bc22f7ff1f2"></div>
 </div>
 
 <!-- ======================= FOOTER WITH DIALOG TRIGGERS ======================= -->
@@ -278,7 +295,7 @@
   </div>
   <div class="space-y-3 text-sm text-slate-600 leading-relaxed max-h-[70vh] overflow-y-auto pr-1">
     <p><strong class="text-slate-900">What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
-    <p><strong class="text-slate-900">Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong class="text-slate-900">google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
+    <p><strong class="text-slate-900">Advertising:</strong> This site displays third-party ads. Advertising partners may use cookies or similar technologies to serve non-personalized or personalized ads based on your browser interactions.</p>
     <p><strong class="text-slate-900">Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
     <p><strong class="text-slate-900">Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
     <p><strong class="text-slate-900">Contact:</strong> Questions about this policy can be sent to <strong class="text-slate-900">podugenerations@gmail.com</strong>.</p>
@@ -295,9 +312,6 @@ const PRESETS = {
   custom:    { w: 3.5, h: 4.5, kb: 50 },
 };
 
-// =====================================================================
-// PRESET / DIMENSION HANDLING
-// =====================================================================
 function getCmDims() {
   const preset = $("presetSelect").value;
   if (preset === "custom") {
@@ -332,9 +346,6 @@ $("customH").addEventListener("input", () => { updateDimsInfo(); if (sourceImage
 $("dpiInput").addEventListener("input", updateDimsInfo);
 updateDimsInfo();
 
-/* =====================================================================
-   CROP FRAME — a fixed on-screen rectangle at the target aspect ratio.
-   ===================================================================== */
 let sourceImage = null;
 let displayScale = 1;      
 let coverScale = 1;        
@@ -383,7 +394,6 @@ $("resetBtn").addEventListener("click", () => {
   $("resultStats").classList.add("hidden");
 });
 
-// Keyboard nudging
 canvas.addEventListener("keydown", (e) => {
   if (!sourceImage) return;
   const step = e.shiftKey ? 10 : 2;
@@ -442,7 +452,6 @@ $("zoomSlider").addEventListener("input", () => {
   draw();
 });
 
-// Drag to reposition
 canvas.addEventListener("pointerdown", (e) => {
   if (!sourceImage) return;
   dragging = true;
@@ -461,9 +470,6 @@ canvas.addEventListener("pointermove", (e) => {
   canvas.addEventListener(evt, () => { dragging = false; });
 });
 
-/* =====================================================================
-   GENERATE AND COMPRESS
-   ===================================================================== */
 $("generateBtn").addEventListener("click", () => {
   if (!sourceImage) return;
 
