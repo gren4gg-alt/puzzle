@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Play WordFall, a free browser word game from Broshere.">
+<link rel="canonical" href="https://broshere.com/games/word_fall_game.html">
 <title>WordFall</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
      crossorigin="anonymous"></script>
@@ -252,17 +254,6 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
 </head>
 <body>
 
-<!-- ══ TOP BANNER AD ══════════════════════════════════════════════
-     AdSense: replace div.ad-banner-placeholder with:
-     <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px"
-          data-ad-client="ca-pub-XXXX" data-ad-slot="YYYY"></ins>
-     <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-     AdMob (Capacitor): call AdMob.showBanner({adId:'ca-app-pub-XXX/YYY', position:'TOP_CENTER'})
-     ════════════════════════════════════════════════════════════ -->
-<div id="adTop">
-  <div class="ad-banner-placeholder">AD BANNER · 320×50</div>
-</div>
-
 <div id="hud">
   <div class="hud-box">
     <span class="hud-label">SCORE</span>
@@ -310,32 +301,6 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
   <button class="wb-btn" id="submitBtn" onclick="submitWord()">✓ GO</button>
 </div>
 <div id="kbHint" style="width:100%;max-width:480px;text-align:center;padding:2px;color:#2a3150;font-size:10px;letter-spacing:1px;flex-shrink:0;background:#080b14">⌨ TYPE LETTERS · BACKSPACE · ENTER TO SUBMIT</div>
-
-<!-- BOTTOM BANNER AD ═══════════════════════════════════════════════
-     Same swap as top — use a 320×50 or 300×50 unit
-     AdMob position: 'BOTTOM_CENTER'
-     ════════════════════════════════════════════════════════════ -->
-<div id="adBottom">
-  <div class="ad-banner-placeholder">AD BANNER · 320×50</div>
-</div>
-
-<!-- ══ INTERSTITIAL AD ══════════════════════════════════════════
-     Shown every 3 deaths. Replace .ad-rect-placeholder with:
-     AdSense 300×250:
-       <ins class="adsbygoogle" style="display:inline-block;width:300px;height:250px"
-            data-ad-client="ca-pub-XXXX" data-ad-slot="ZZZZ"></ins>
-     AdMob Interstitial (Capacitor):
-       await AdMob.prepareInterstitial({adId:'ca-app-pub-XXX/YYY'});
-       await AdMob.showInterstitial();  ← call instead of showing this overlay
-     ════════════════════════════════════════════════════════════ -->
-<div id="interstitial">
-  <div class="int-label">ADVERTISEMENT</div>
-  <div class="ad-rect-placeholder">
-    300×250 Ad Unit
-    <small style="color:#1e2540">Replace with AdSense ins or AdMob call</small>
-  </div>
-  <button class="skip-btn" id="skipBtn">Skip in <span id="skipCount">5</span>s</button>
-</div>
 
 <div id="freezeOverlay"></div>
 
@@ -752,8 +717,7 @@ function gameOver() {
   cancelAnimationFrame(animFrame);
   SFX.gameover(); haptic([50,50,200]);
   if (score>highScore) { highScore=score; localStorage.setItem('wf_high',score); }
-  if (sessionGames%3===0) showInterstitial(()=>showGameOver());
-  else showGameOver();
+  showGameOver();
 }
 
 function showGameOver() {
@@ -770,32 +734,6 @@ function showGameOver() {
   document.getElementById('startBtn').textContent='▶ PLAY AGAIN';
   document.getElementById('homeBtn').style.display='block';
   document.getElementById('overlay').style.display='flex';
-}
-
-// ══════════════════════════════════════════════════════════════════
-//  AD LOGIC
-// ══════════════════════════════════════════════════════════════════
-let skipReady=false, skipCallback=null, intTimer=null;
-
-function showInterstitial(cb) {
-  skipCallback=cb; skipReady=false;
-  const el=document.getElementById('interstitial');
-  const btn=document.getElementById('skipBtn');
-  btn.classList.remove('active');
-  btn.onclick=null;
-  el.style.display='flex';
-  let s=5;
-  document.getElementById('skipCount').textContent=s;
-  intTimer=setInterval(()=>{
-    s--;
-    document.getElementById('skipCount').textContent=Math.max(s,0);
-    if(s<=0){
-      clearInterval(intTimer);
-      btn.textContent='Close Ad';
-      btn.classList.add('active');
-      btn.onclick=()=>{ el.style.display='none'; if(skipCallback) skipCallback(); };
-    }
-  },1000);
 }
 
 // ══════════════════════════════════════════════════════════════════

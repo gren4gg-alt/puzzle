@@ -76,22 +76,10 @@ that pulls Tailwind and (optionally) AdSense from CDNs at runtime.
 ## Before going live: things to configure
 
 ### 1. Google AdSense
-Search `ca-pub-XXXXXXXXXXXXXXXX` in `index.html` and replace every instance
-with your real AdSense publisher ID. Also replace the `data-ad-slot` values
-(`1111111111`, `2222222222`) with your real ad unit slot IDs from your
-AdSense account. There's a top banner and a bottom banner already wired up.
+Use your real AdSense publisher ID only in the current site-verification script; create manual ad units only after the site has been approved.
 
-> Note: AdSense requires your domain (your GitHub Pages URL) to be added and
-> approved in your AdSense account before ads will actually render — until
-> then the slots will just render blank.
-
-### 2. Rewarded video ad (download gate)
-The **Download & Share** button currently opens a *simulated* 5-second
-rewarded-ad modal before releasing the file. Find `#adVideoSlot` in
-`index.html` and swap the placeholder `<div>` for your real ad SDK call
-(e.g. Google Ad Manager rewarded web ads / AdMob for Web). The
-`showRewardedAd(callback)` function is where the timer logic lives if you
-want to change the required watch time or make it skippable sooner.
+> Add the domain in AdSense, publish the verification script, and wait until
+> the site is approved before creating or placing manual ad units.
 
 ### 3. Adding new apps to the home page
 Open `index.html` and edit the `APPS` array near the bottom of the `<script>`
