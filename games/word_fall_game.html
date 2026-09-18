@@ -6,8 +6,7 @@
 <meta name="description" content="Play WordFall, a free browser word game from Broshere.">
 <link rel="canonical" href="https://broshere.com/games/word_fall_game.html">
 <title>WordFall</title>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
-     crossorigin="anonymous"></script>
+
 <!-- ═══════════════════════════════════════════════════════════════
      AD SDK INTEGRATION POINTS
      Replace comment blocks below with your actual SDK scripts.
@@ -16,7 +15,7 @@
      ═══════════════════════════════════════════════════════════════ -->
 
 <!-- [AD-SDK] Google AdSense — uncomment and replace ca-pub-XXXX with your ID
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+
 -->
 <!-- [AD-SDK] AdMob via Capacitor — initialize in app.js after platform ready
      import { AdMob } from '@capacitor-community/admob';
@@ -251,6 +250,7 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
 #puToast { background:#f59e0b; color:#000; }
 #comboToast { background:#a78bfa; color:#000; font-size:20px; }
 </style>
+<style>.game-reading-links{display:flex;gap:8px 16px;flex-wrap:wrap;justify-content:center;max-width:520px;margin:12px auto;font:12px/1.5 system-ui,sans-serif;letter-spacing:normal;pointer-events:auto;flex-shrink:0}.game-reading-links a{color:#f4ddb4;text-decoration:underline;text-underline-offset:3px;padding:3px}.game-reading-links a:focus-visible{outline:2px solid #f4ddb4;outline-offset:3px}</style>
 </head>
 <body>
 
@@ -321,7 +321,8 @@ canvas { width:100%; max-width:480px; flex:1; display:block; touch-action:none; 
   <div class="ov-title" id="ovTitle">WordFall</div>
   <p class="ov-sub" id="ovMsg">Tap letters to spell words before time runs out.<br>Longer words = more points + bonus time!</p>
 
-  <!-- DIFFICULTY -->
+  <nav class="game-reading-links" aria-label="Game guide and site information"><a href="../guides/word-fall.html">Full guide &amp; strategy</a><a href="../games/gameindex.html">All games</a><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a></nav>
+<!-- DIFFICULTY -->
   <div id="diffSection">
     <div style="color:#3d4f70;font-size:11px;letter-spacing:1px;margin-bottom:6px;text-align:center">DIFFICULTY</div>
     <div class="ov-modes">

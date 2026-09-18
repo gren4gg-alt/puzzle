@@ -51,11 +51,6 @@
   /* confetti */
   #confettiCanvas{ position: fixed; inset:0; pointer-events:none; z-index: 60; }
 
-  /* rewarded ad modal */
-  .radial-progress{
-    background: conic-gradient(#6366f1 calc(var(--p) * 1%), #e5e7eb 0);
-  }
-
   ::-webkit-scrollbar{ height:8px; width:8px; }
   ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:8px; }
 
@@ -169,9 +164,11 @@
     color: var(--ink);
   }
 </style>
+<link rel="stylesheet" href="assets/editorial.css">
 </head>
 
 <body class="min-h-screen flex flex-col">
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="index.html">Broshere</a><a href="index.html#tools">Tools</a><a href="games/gameindex.html">Games</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a></nav>
 
 <!-- ======================= TOP AD BANNER ======================= -->
 <!-- ======================= HEADER / NAV ======================= -->
@@ -206,7 +203,7 @@
         <strong class="text-slate-800 text-sm block">🧩 How to Create a Puzzle:</strong>
         <ol class="list-decimal list-inside space-y-1">
           <li>Upload any photo from your device.</li>
-          <li>Select your preferred grid size ($2\times2$ up to $6\times6$).</li>
+          <li>Select your preferred grid size (2 × 2 up to 6 × 6).</li>
           <li>Click <strong>Download & Share</strong> to get the scrambled image.</li>
           <li><em>Important:</em> Send the file as a <strong>Document/File</strong> (not a regular photo) on messaging apps like WhatsApp to keep the hidden solution key intact.</li>
         </ol>
@@ -240,13 +237,13 @@
       <!-- Controls -->
       <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
         <div>
-          <label class="text-sm font-semibold block mb-1">1. Choose a photo</label>
+          <label for="createFileInput" class="text-sm font-semibold block mb-1">1. Choose a photo</label>
           <input id="createFileInput" type="file" accept="image/*"
             class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
         </div>
 
         <div>
-          <label class="text-sm font-semibold block mb-1">2. Grid size</label>
+          <label for="gridSizeSelect" class="text-sm font-semibold block mb-1">2. Grid size</label>
           <select id="gridSizeSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
             <option value="2">2 × 2 — very easy</option>
             <option value="3" selected>3 × 3 — default</option>
@@ -286,7 +283,7 @@
   <section id="solveSection" class="hidden">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
       <div>
-        <label class="text-sm font-semibold block mb-1">Upload the scrambled puzzle you received</label>
+        <label for="solveFileInput" class="text-sm font-semibold block mb-1">Upload the scrambled puzzle you received</label>
         <input id="solveFileInput" type="file" accept="image/*"
           class="block w-full text-sm border border-slate-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100"/>
       </div>
@@ -308,80 +305,34 @@
     </div>
   </section>
 
+<section class="reading" id="how-to-play"><div class="eyeline">Create · Share · Solve</div><h2>Photo Puzzle Exchange: a complete walkthrough</h2>
+<p>Photo Puzzle Exchange turns a picture into a tile puzzle you can send to someone else. You choose a photo and a grid, download the scrambled PNG, and share that file. The recipient opens the Solve a Puzzle tab, loads the received file, and rebuilds the picture by placing tiles on the board. Neither person needs an account.</p>
+<p>The distinctive part is the shared file: the information needed to recognize the puzzle travels with the image. That makes it easy to send a challenge without setting up a shared room, but it also means the downloaded file must survive the trip unchanged. A screenshot of the puzzle is not a replacement for that file.</p>
+<h3>1. Choose a picture with useful clues</h3><p>Start with an image you have permission to share. A scene with a clear subject, different colors, and recognizable edges makes a friendly first puzzle. A picture containing mostly blue sky or repeated leaves can be much harder because several pieces look alike. For a first attempt, try a photo with two or three distinct objects and choose the default 3 × 3 grid.</p>
+<p>Check the preview after loading the photo. Ask whether the intended recipient will be able to distinguish the pieces at their screen size. A very detailed photo can lose helpful clues when viewed on a small phone. Keep the original file separately; the puzzle download is a new file made for this game.</p>
+<h3>2. Pick a grid and create the file</h3><p>The selector offers 2 × 2, 3 × 3, 4 × 4, 5 × 5, and 6 × 6 grids. Those create 4, 9, 16, 25, and 36 pieces respectively. Each extra row and column adds several pieces, so a 6 × 6 puzzle is a much larger task than a 3 × 3 puzzle. Image choice matters as much as the piece count.</p>
+<p>Use Re-shuffle if you want another arrangement of the same picture. When the preview looks right, choose Download &amp; Share. Save that downloaded PNG and use it for the exchange. You do not need to send the original photo as well; doing so would show the recipient the answer before they start.</p>
+<h3>3. Share the original downloaded PNG</h3><p>Send the puzzle as a file or document attachment. Messaging services may resize or recompress images sent through their normal photo workflow, which can remove the puzzle data. In WhatsApp, choose the Document or File attachment route where available, rather than sending it as a gallery photo. The exact buttons vary between devices.</p>
+<p>Do not crop the puzzle, run it through the Media Compressor, convert it to JPEG, or take a screenshot to share. Even if the picture still looks scrambled, it may no longer contain the information that Solve mode expects. For a step-by-step transfer check, read <a href="guides/share-photo-puzzle.html">how to share a puzzle that still opens</a>.</p>
+<h3>4. Rebuild the picture in Solve mode</h3><p>Switch to Solve a Puzzle and choose the received file. Once it is recognized, the board and piece tray appear. Drag a piece from the tray into its intended square. Look for lines that continue across tile boundaries, such as a horizon, a table edge, or the side of a building. Corners and distinctive colors often provide useful starting points.</p>
+<p>For example, in a photo of a red cup on a wooden table, identify the red tiles first, then compare the curve of the cup across neighboring pieces. Use the table grain to orient the remaining image. Do not rely only on “this piece is brown”: several tiles may share a color while their edges reveal different positions.</p>
+<p>Watch the placement counter as you work, but remember that filling squares is not the same as solving the image correctly. Check adjacent edges before deciding that a piece belongs in a slot. When the arrangement is correct, the game celebrates the solve and offers the completed picture for download.</p>
+<h3>What the completed download contains</h3><p>The solved download is the reassembled image produced by the game. It is not a promise of a byte-for-byte copy of the source photo or preservation of its original metadata. The puzzle key is not included in the completed export. To send another playable challenge, use a puzzle download from Create mode.</p>
+<h3>Fixing a puzzle that will not load</h3><p>First try the original downloaded puzzle in Solve mode on the creator’s device. If it opens there but the recipient’s copy fails, compare how the file was transferred. Ask for the original PNG as a document and avoid using an image saved from a chat preview. If the original also fails, recreate the puzzle and test it before sending again.</p>
+<p>A normal photo, a random scrambled image, and a completed-image download are not interchangeable with a generated puzzle file. The app needs the information included during creation. If both ways of retaining that information have been destroyed, the visible image alone may not be enough to recover a playable file.</p>
+<h3>Privacy and a useful difficulty challenge</h3><p>Photo processing happens locally in your browser. Sharing the downloaded file is your own action through the service you choose, and that service has its own handling of attachments. A puzzle is not encryption: send only pictures you are comfortable sharing with the recipient. Site hosting and advertising requests are described in the <a href="privacy.html">Privacy Policy</a>.</p>
+<p>For a fair difficulty experiment, create the same image at 2 × 2 and 4 × 4 and compare the solving experience. Then keep the grid fixed and change to a more repetitive picture. This separates the effect of more pieces from the effect of weaker visual clues. See <a href="guides/puzzle-difficulty.html">choosing a satisfying puzzle difficulty</a> for more examples.</p></section>
 </main>
 
 <!-- ======================= BOTTOM AD BANNER ======================= -->
-<footer class="text-center text-xs text-slate-500 py-6 border-t border-slate-200 bg-white/50 space-y-3">
-  <div>
-    100% client-side. No servers, no databases — the puzzle key travels inside the image file itself.
-  </div>
-  <div class="flex justify-center gap-4 text-slate-600 font-medium">
-    <button onclick="document.getElementById('aboutModal').showModal()" class="hover:underline">About</button>
-    <span>•</span>
-    <button onclick="document.getElementById('contactModal').showModal()" class="hover:underline">Contact</button>
-    <span>•</span>
-    <button onclick="document.getElementById('privacyModal').showModal()" class="hover:underline">Privacy Policy</button>
-  </div>
-</footer>
+<footer class="site-footer"><nav aria-label="Site information"><a href="index.html">Home</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
 
 <!-- ======================= MODALS ======================= -->
-<dialog id="aboutModal">
-  <div class="modal-header">
-    <h3>About Broshere</h3>
-    <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
-    <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
-    <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
-  </div>
-</dialog>
 
-<dialog id="contactModal">
-  <div class="modal-header">
-    <h3>Contact</h3>
-    <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
-    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
-  </div>
-</dialog>
 
-<dialog id="privacyModal">
-  <div class="modal-header">
-    <h3>Privacy Policy</h3>
-    <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
-    <p><strong>Advertising:</strong> This site displays ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can learn more about how Google uses this data, and opt out of personalized advertising, at <strong>google.com/settings/ads</strong> or via the Digital Advertising Alliance's opt-out page.</p>
-    <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
-    <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
-    <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
-  </div>
-</dialog>
 
-<!-- ======================= REWARDED VIDEO AD MODAL ======================= -->
-<div id="rewardedAdModal" class="hidden fixed inset-0 bg-black/70 z-[70] grid place-items-center p-4">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center space-y-4">
-    <p class="text-sm font-semibold text-slate-700">Watch a short ad to unlock your download</p>
-    <!-- Placeholder "video ad" surface. Swap with your real rewarded-ad SDK
-         (Google Ad Manager / AdMob rewarded web ad) inside #adVideoSlot. -->
-    <div id="adVideoSlot" class="w-full h-40 bg-slate-900 rounded-lg grid place-items-center text-white text-xs">
-      Ad playing…
-    </div>
-    <div class="flex items-center justify-center">
-      <div id="adRing" class="radial-progress w-14 h-14 rounded-full grid place-items-center" style="--p:0">
-        <div class="w-11 h-11 bg-white rounded-full grid place-items-center text-xs font-semibold" id="adCountdown">5</div>
-      </div>
-    </div>
-    <button id="adSkipBtn" disabled
-      class="w-full py-2 rounded-lg bg-slate-200 text-slate-500 text-sm font-semibold disabled:opacity-60">
-      Please wait…
-    </button>
-  </div>
-</div>
+
+
 
 <!-- ======================= WIN BANNER ======================= -->
 <div id="winBanner" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-[80] bg-emerald-600 text-white px-6 py-5 rounded-xl shadow-2xl text-center space-y-3">
@@ -556,7 +507,7 @@ function fitWithinMax(w, h, maxDim) {
 // ---------- DOWNLOAD: builds the final key-embedded PNG ----------
 $("downloadBtn").addEventListener("click", () => {
   if (!sourceImg) return;
-  showRewardedAd(() => generateAndDownload());
+  generateAndDownload();
 });
 
 async function generateAndDownload() {
@@ -659,40 +610,6 @@ function readStegoStrip(ctx, width, rows, canvasHeight) {
     const str = String.fromCharCode(...chars);
     return JSON.parse(str);
   } catch { return null; }
-}
-
-// =====================================================================
-// REWARDED VIDEO AD (simulated) — swap the internals for a real SDK
-// =====================================================================
-function showRewardedAd(onComplete) {
-  const modal = $("rewardedAdModal");
-  const countdownEl = $("adCountdown");
-  const ring = $("adRing");
-  const skipBtn = $("adSkipBtn");
-  let seconds = 5;
-  countdownEl.textContent = seconds;
-  ring.style.setProperty("--p", 0);
-  skipBtn.disabled = true;
-  skipBtn.textContent = "Please wait…";
-  modal.classList.remove("hidden");
-
-  const total = seconds;
-  const timer = setInterval(() => {
-    seconds--;
-    countdownEl.textContent = Math.max(seconds, 0);
-    ring.style.setProperty("--p", Math.round(((total - seconds) / total) * 100));
-    if (seconds <= 0) {
-      clearInterval(timer);
-      skipBtn.disabled = false;
-      skipBtn.textContent = "Continue to download";
-    }
-  }, 1000);
-
-  skipBtn.onclick = () => {
-    if (skipBtn.disabled) return;
-    modal.classList.add("hidden");
-    onComplete();
-  };
 }
 
 // =====================================================================

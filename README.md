@@ -1,128 +1,42 @@
-# App Hub + 🧩 Photo Puzzle Exchange
+# Broshere
 
-This repo has two parts:
+Static browser tools, games, and practical guides for https://broshere.com. No build step is required.
 
-- **`index.html`** — a generalized **home page** that lists every app you
-  publish, as cards. This is what visitors land on first.
-- **`puzzle-exchange.html`** — the actual **Photo Puzzle Exchange** app,
-  linked from the home page. It's kept in its own file on purpose: as you add
-  more small apps, each one gets its own HTML file, and you just register it
-  on the home page instead of merging everything into one giant file.
+## Structure
 
-Live demo: `https://<your-username>.github.io/<your-repo>/`
-(Photo Puzzle Exchange specifically: `https://<your-username>.github.io/<your-repo>/puzzle-exchange.html`)
+- `index.html`: static home/tool directory.
+- `puzzle-exchange.html`, `exam-photo-resizer.html`, `media-compressor.html`: tools, instructions, and troubleshooting.
+- `games/gameindex.html`: game directory. Cozy Fit lives in `games/cozy-fit-game/`; existing game URLs are preserved.
+- `guides/`: ten detailed guides and their library page.
+- `assets/editorial.css`: shared navigation, footer, and reading styles.
+- `about.html`, `contact.html`, `privacy.html`, `terms.html`: site information.
+- `sitemap.xml`, `robots.txt`, `ads.txt`, `CNAME`: discovery and domain configuration.
 
----
+`model-workbench.html` is the integrated 3D compression and conversion tool. Its generated sample, on-page instructions, and detailed guide help visitors compare formats, textures, geometry, and export limits. It is linked from the home page and included in validation and the sitemap.
+
+## Local preview and checks
+
+Serve this folder with `python -m http.server 8765 --bind 127.0.0.1`, then open http://127.0.0.1:8765/. Some pages fetch libraries, styles, or fonts externally; file processing runs in the browser.
+
+With current Node.js:
+
+```sh
+node --experimental-vm-modules scripts/check-site.mjs
+node scripts/check-cozy-levels.mjs
+```
+
+The first check validates local links, anchors, metadata presence, IDs, sitemap targets, and script syntax. The second verifies all 50 Cozy Fit stored solutions. Neither replaces browser testing.
+
+## Editing content
+
+Edit the static cards in the home or Games page; there is no JavaScript app registry. Keep guides specific to actual controls and behavior. Update directory links, related guides, canonical URLs, and sitemap together. Preserve old game URLs unless redirects are configured.
 
 ## Photo Puzzle Exchange
 
-A **100% client-side, serverless, database-free** photo puzzle game. One person
-scrambles a photo into a puzzle and shares the image file directly (WhatsApp,
-email, Drive, etc). The receiver uploads that same file and solves it —
-no accounts, no backend, no database. The "answer key" travels **inside the
-image file itself**. Once solved, the receiver can download the completed,
-seamless image (no puzzle key embedded — the game is over at that point).
+Create mode scrambles a photo into a PNG; Solve reads its embedded grid and piece order and creates a draggable board. The key is appended after the PNG end marker, with a pixel-strip fallback. This is puzzle metadata, not encryption. Share the original download as a file/document: resizing, screenshots, and photo recompression can destroy the key. A completed image download is an ordinary picture, not a new playable puzzle. Downloads are direct, with no ad timer or gate.
 
----
+## Publishing
 
-## How it works
+Publish the public root pages and entire `assets/`, `guides/`, and `games/` folders through the existing host. Exclude development scripts and documentation. Existing AdSense loaders on content pages and the publisher ID in `ads.txt` are preserved. Fullscreen game pages and new guides do not load automatic ads. Cozy Fit advertising is disabled globally in `ads-config.js`.
 
-- **Create mode:** upload a photo → pick a grid size → the app scrambles it on
-  a `<canvas>` → click **Download & Share** to get a single PNG file.
-- **Solve mode:** upload the scrambled PNG you received → the app detects the
-  hidden answer key, slices the image into draggable pieces, and gives you a
-  drag-and-drop board to solve it. Confetti fires on a correct solve.
-
-The answer key (grid size + piece order) is embedded two ways for redundancy:
-
-| Method | How | Robustness |
-|---|---|---|
-| **B — File Appending (primary)** | JSON key is appended as raw bytes after the PNG's end marker | Survives byte-exact transfers (Drive, email, AirDrop, WhatsApp **Document** mode) |
-| **A — Pixel Steganography (fallback)** | Key is written into a 1–2px strip at the bottom of the image | Survives if pixels stay lossless even when trailing bytes are stripped |
-
-⚠️ **Important:** if sharing via WhatsApp, send the downloaded file as a
-**Document/File** (📎 → Document), not as a "Photo" — photo mode forces
-recompression and resizing, which can destroy both embedding methods.
-
----
-
-## Deploying to GitHub Pages
-
-1. Create a new GitHub repository (or use an existing one).
-2. Add **both** `index.html` and `puzzle-exchange.html` to the **root** of
-   the repo — or to a `/docs` folder if you prefer that Pages source. They
-   must sit side by side so the home page's links resolve correctly.
-3. Commit and push:
-   ```bash
-   git init
-   git add index.html puzzle-exchange.html README.md
-   git commit -m "Add app hub + Photo Puzzle Exchange"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/<your-repo>.git
-   git push -u origin main
-   ```
-4. In GitHub: **Settings → Pages**
-   - **Source:** `Deploy from a branch`
-   - **Branch:** `main` and folder `/ (root)` (or `/docs` if you used that)
-   - Save.
-5. Wait 1–2 minutes, then visit:
-   `https://<your-username>.github.io/<your-repo>/`
-
-No build step, no dependencies to install — it's a single static HTML file
-that pulls Tailwind and (optionally) AdSense from CDNs at runtime.
-
----
-
-## Before going live: things to configure
-
-### 1. Google AdSense
-Use your real AdSense publisher ID only in the current site-verification script; create manual ad units only after the site has been approved.
-
-> Add the domain in AdSense, publish the verification script, and wait until
-> the site is approved before creating or placing manual ad units.
-
-### 3. Adding new apps to the home page
-Open `index.html` and edit the `APPS` array near the bottom of the `<script>`
-block:
-```js
-const APPS = [
-  {
-    name: "Photo Puzzle Exchange",
-    url: "puzzle-exchange.html",
-    tag: "Game",
-    emoji: "🧩",
-    description: "..."
-  },
-  // add a new object here for each new app, pointing url at its own .html file
-];
-```
-Each app should live in its own HTML file next to `index.html` — just like
-`puzzle-exchange.html`. The Photo Puzzle Exchange app itself links back to
-`index.html` via the **All apps** button in its header.
-
----
-
-## Local testing
-
-Just open `index.html` directly in a browser — no server required. (Some
-browsers restrict `file://` canvas operations in edge cases; if you hit
-issues, serve it locally instead:)
-
-```bash
-python3 -m http.server 8000
-# then visit http://localhost:8000
-```
-
----
-
-## Tech stack
-
-- Vanilla HTML/CSS/JS — no build tools, no frameworks
-- Tailwind CSS via CDN
-- HTML5 Canvas for image slicing, shuffling, and pixel-level encoding
-- Pointer Events API for mouse + touch drag-and-drop
-- Google AdSense (banner) + a rewarded-ad-style download gate
-
-## License
-
-Add your preferred license here (MIT recommended for a project like this).
+Read [ADSENSE-READINESS.md](ADSENSE-READINESS.md) for the work completed, testing limits, official references, and live checks. These local changes have not been deployed or submitted to Google.

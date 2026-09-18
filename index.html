@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Broshere — a small, hand-built collection of free browser tools and games. Every app runs entirely client-side: no accounts, no uploads, no servers. Compress media, resize exam photos, solve photo puzzles, and play browser games, all processed locally in your device.">
+<meta name="description" content="Free browser tools and games with practical guides. Resize photos, optimize 3D models, compress media, share photo puzzles, and play five games. File processing happens locally in your browser, with no account required.">
 <link rel="canonical" href="https://broshere.com/">
 <title>Broshere — Small Web Toys, No Accounts, No Uploads</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907" crossorigin="anonymous"></script>
@@ -384,13 +384,15 @@
     .app-card, .app-card .arrow, .btn-all-apps{ transition:none; }
   }
 </style>
+<link rel="stylesheet" href="assets/editorial.css">
 </head>
 <body>
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="index.html">Broshere</a><a href="index.html#tools">Tools</a><a href="games/gameindex.html">Games</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a></nav>
 
 <header>
-  <span class="eyebrow">no accounts &middot; no servers &middot; runs in your browser</span>
+  <span class="eyebrow">no accounts &middot; local file processing &middot; runs in your browser</span>
   <h1>Small web toys, made to be shared.</h1>
-  <p>Broshere is a small, hand-built collection of browser tools and games. Each app below is a single self-contained page — pick one to get started. Everything runs on your own device: files you open, photos you resize, or games you play never leave your browser and are never uploaded to any server.</p>
+  <p>Broshere is a small, hand-built collection of browser tools and games. Make a photo puzzle, prepare an image, compress media, or take a game break. File processing happens locally in your browser, and you can start without an account. Each tool includes practical instructions and the games have their own strategy guides.</p>
   
   <button class="btn-all-apps" onclick="scrollToGrid()">
     <span>🎮 Explore All Apps</span>
@@ -398,17 +400,21 @@
   </button>
 
   <div class="count-tag">
-    <span id="appCount">0 apps</span>
+    <span id="appCount">5 apps</span>
     <span class="rule"></span>
     <span>updated by hand</span>
   </div>
 </header>
 
-<main>
-  <div id="appGrid"></div>
+<main id="tools">
+  <div id="appGrid"><a href="puzzle-exchange.html" class="app-card"><div class="card-top"><span class="card-emoji">🧩</span><span class="card-tag">Game</span></div><h2 class="card-name">Photo Puzzle Exchange</h2><p class="card-desc">Scramble a photo into a puzzle, share the file, and let someone else solve it — the answer key travels inside the image itself.</p><span class="card-cta">Open <span class="arrow">→</span></span></a>
+<a href="media-compressor.html" class="app-card"><div class="card-top"><span class="card-emoji">🗜️</span><span class="card-tag">Tool</span></div><h2 class="card-name">Media Compressor</h2><p class="card-desc">Shrink photos, audio, and video right in your browser — nothing is ever uploaded anywhere.</p><span class="card-cta">Open <span class="arrow">→</span></span></a>
+<a href="exam-photo-resizer.html" class="app-card"><div class="card-top"><span class="card-emoji">📐</span><span class="card-tag">Tool</span></div><h2 class="card-name">Exam Photo Resizer</h2><p class="card-desc">Crop to your chosen dimensions and export a JPEG with a target file-size limit. Check the result against your form.</p><span class="card-cta">Open <span class="arrow">→</span></span></a>
+<a href="model-workbench.html" class="app-card"><div class="card-top"><span class="card-emoji">🧊</span><span class="card-tag">3D tool</span></div><h2 class="card-name">Model Workbench</h2><p class="card-desc">Optimize and convert 3D models, compare previews, and check textures, animation, and file size before exporting.</p><span class="card-cta">Open <span class="arrow">→</span></span></a>
+<a href="games/gameindex.html" class="app-card"><div class="card-top"><span class="card-emoji">🎮</span><span class="card-tag">Games</span></div><h2 class="card-name">Game Hub</h2><p class="card-desc">Browse every small browser game in one place — arcade, word games, and whatever comes next.</p><span class="card-cta">Open <span class="arrow">→</span></span></a></div>
 </main>
 
-<section class="content-section" id="faq">
+<section class="reading"><div class="eyeline">Choose a useful starting point</div><h2>What would you like to do?</h2><div class="cards"><article class="guide-card"><h3>Send a picture with a twist</h3><p>Turn a familiar photograph into a tile puzzle for a friend. Choose the grid, test the downloaded file, and send it as an attachment. The recipient solves it on their own device.</p><a href="puzzle-exchange.html#how-to-play">Learn the photo puzzle workflow</a></article><article class="guide-card"><h3>Prepare a file for a form</h3><p>When you already know the required image dimensions, frame the subject and export a JPEG. Check pixel size, clarity, and the actual download size before submitting it.</p><a href="exam-photo-resizer.html#how-to-use">Understand the photo settings</a></article><article class="guide-card"><h3>Make media easier to share</h3><p>Compare formats and quality settings for photos, or re-encode supported audio and video in your browser. Check the output format before using it in another service.</p><a href="media-compressor.html#how-to-use">Choose compression settings</a></article><article class="guide-card"><h3>Practice a different skill</h3><p>Pack colorful shapes in Cozy Fit, build words in Word Fall, time moving-platform jumps in Drift Hop, or read hazards in ROLL and Dune Runner. Each game rewards a different kind of observation.</p><a href="games/gameindex.html">Find a game to play</a></article></div><h2>Prepare a 3D asset for your next project</h2><p><a href="model-workbench.html">Model Workbench</a> converts supported model formats and lets you compare geometry, textures, and animation before downloading. Try its generated sample to explore without a personal file, then use the <a href="guides/model-workbench.html">3D optimization guide</a> to choose settings for your destination.</p><h2>A new puzzle trail to explore</h2><p><a href="games/cozy-fit-game/index.html">Cozy Fit</a> starts with four large blocks and grows into 50 shaped packing puzzles. Try the first board, then read the <a href="guides/cozy-fit.html">Cozy Fit strategy guide</a> to understand why a piece that fits can still block the rest of a puzzle.</p><h2>Learn beyond the start button</h2><p>A good instruction should help you make a decision. The <a href="guides/index.html">guide library</a> explains why a puzzle file may stop opening after sharing, how a word earns points, and why lowering an image’s file size does not guarantee that a form accepts it. Use the worked examples, then try the same decision in the tool.</p><h2>Local processing, with clear limits</h2><p>Your selected photos, media, and 3D models are processed by browser features on your device. The pages still use hosting and may load third-party scripts, fonts, and advertising resources. Games that remember records use local browser storage rather than an account. Read the <a href="privacy.html">Privacy Policy</a> for the distinction, and keep original files before editing or sharing.</p></section><section class="content-section" id="faq">
   <h2>Frequently asked questions</h2>
   <div class="faq-item">
     <h3>Do I need to create an account?</h3>
@@ -416,7 +422,7 @@
   </div>
   <div class="faq-item">
     <h3>Are my files or photos uploaded anywhere?</h3>
-    <p>No. Every tool processes files locally in your browser using JavaScript. Nothing is sent to a server, so your files stay on your own device.</p>
+    <p>No. Every tool processes files locally in your browser using JavaScript. The tool does not upload the selected files for processing. Other page resources, such as fonts and advertising scripts, can still make network requests.</p>
   </div>
   <div class="faq-item">
     <h3>Is Broshere free to use?</h3>
@@ -431,124 +437,14 @@
   </div>
 </section>
 
-<footer>
-  <ul class="footer-links">
-    <li><a href="/about.html">About</a></li>
-    <li>&middot;</li>
-    <li><a href="/contact.html">Contact</a></li>
-    <li>&middot;</li>
-    <li><a href="/privacy.html">Privacy</a></li>
-    <li>&middot;</li>
-    <li><a href="/terms.html">Terms</a></li>
-  </ul>
-  <div>© 2026 broshere.com &middot; a solo-built collection of browser tools</div>
-</footer>
+<footer class="site-footer"><nav aria-label="Site information"><a href="index.html">Home</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
 
-<dialog id="aboutModal">
-  <div class="modal-header">
-    <h3>About Broshere</h3>
-    <button class="btn-close" onclick="document.getElementById('aboutModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
 
-<p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
 
-<p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
 
-  </div>
-</dialog>
 
-<dialog id="contactModal">
-  <div class="modal-header">
-    <h3>Contact</h3>
-    <button class="btn-close" onclick="document.getElementById('contactModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
-    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong>podugenerations@gmail.com</strong></p>
-  </div>
-</dialog>
 
-<dialog id="privacyModal">
-  <div class="modal-header">
-    <h3>Privacy Policy</h3>
-    <button class="btn-close" onclick="document.getElementById('privacyModal').close()">✕</button>
-  </div>
-  <div class="modal-body">
-    <p><strong>What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
-    <p><strong>Advertising:</strong> This site may display ads served by Google AdSense. Google and its advertising partners may use cookies or similar technologies to provide, measure, and personalize advertising. See our <a href="/privacy.html">Privacy Policy</a> for details and choices.</p>
-    <p><strong>Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
-    <p><strong>Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
-    <p><strong>Contact:</strong> Questions about this policy can be sent to <strong>podugenerations@gmail.com</strong>.</p>
-  </div>
-</dialog>
 
-<script>
-  function scrollToGrid() {
-    document.getElementById("appGrid").scrollIntoView({ behavior: "smooth" });
-  }
-
-  /* =====================================================================
-     APP REGISTRY
-     ===================================================================== */
-  const APPS = [
-    {
-      name: "Photo Puzzle Exchange",
-      url: "puzzle-exchange.html",
-      tag: "Game",
-      emoji: "🧩",
-      description: "Scramble a photo into a puzzle, share the file, and let someone else solve it — the answer key travels inside the image itself."
-    },
-    {
-      name: "Media Compressor",
-      url: "media-compressor.html",
-      tag: "Tool",
-      emoji: "🗜️",
-      description: "Shrink photos, audio, and video right in your browser — nothing is ever uploaded anywhere."
-    },
-    {
-      name: "Exam Photo Resizer",
-      url: "exam-photo-resizer.html",
-      tag: "Tool",
-      emoji: "📐",
-      description: "Crop a photo to the exact cm size and file-size limit a government exam form asks for."
-    },
-    {
-      name: "Game Hub",
-      url: "games/gameindex.html",
-      tag: "Games",
-      emoji: "🎮",
-      description: "Browse every small browser game in one place — arcade, word games, and whatever comes next."
-    },
-  ];
-
-  const grid = document.getElementById("appGrid");
-  const countEl = document.getElementById("appCount");
-  countEl.textContent = APPS.length + (APPS.length === 1 ? " app" : " apps");
-
-  APPS.forEach((app) => {
-    const card = document.createElement("a");
-    card.href = app.url;
-    card.className = "app-card";
-    card.innerHTML = `
-      <div class="card-top">
-        <span class="card-emoji">${app.emoji}</span>
-        <span class="card-tag">${app.tag}</span>
-      </div>
-      <h2 class="card-name">${app.name}</h2>
-      <p class="card-desc">${app.description}</p>
-      <div class="card-cta">
-        <span>Launch App</span>
-        <span class="arrow">→</span>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-
-  if (APPS.length === 0) {
-    grid.innerHTML = `<div class="empty-state">No apps published yet — check back soon.</div>`;
-  }
-</script>
+<script>function scrollToGrid(){document.getElementById("appGrid").scrollIntoView({behavior:"smooth"});}</script>
 </body>
 </html>

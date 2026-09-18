@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Crop and resize exam photos to required dimensions and file-size limits directly in your browser. Your image stays on your device.">
 <link rel="canonical" href="https://broshere.com/exam-photo-resizer.html">
-<title>Exam Photo Resizer — crop to exact cm size for government forms</title>
+<title>Exam Photo Resizer — crop, resize, and reduce JPEG file size | Broshere</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907" crossorigin="anonymous"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -100,32 +100,10 @@
     flex-direction: column;
   }
 </style>
+<link rel="stylesheet" href="assets/editorial.css">
 </head>
 <body class="min-h-screen flex flex-col">
-
-<!-- ======================= TOP ADSTERRA AD BANNER ======================= -->
-<div class="w-full bg-slate-100 border-b border-slate-200 flex justify-center py-2">
-  <script type="text/javascript">
-    atOptions = {
-      'key' : 'YOUR_ADSTERRA_KEY_1',
-      'format' : 'iframe',
-      'height' : 90,
-      'width' : 728,
-      'params' : {}
-    };
-  </script>
-<script>
-  atOptions = {
-    'key' : '089ebc711e21a33d4ffd27ed64959bd8',
-    'format' : 'iframe',
-    'height' : 50,
-    'width' : 320,
-    'params' : {}
-  };
-</script>
-<script src="https://inputoppose.com//invoke.js"></script>
-<div id="container-a2c6f807ae2536b6a5505bc22f7ff1f2"></div>
-</div>
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="index.html">Broshere</a><a href="index.html#tools">Tools</a><a href="games/gameindex.html">Games</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a></nav>
 
 <!-- ======================= HEADER ======================= -->
 <header class="w-full border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-40">
@@ -134,7 +112,7 @@
       <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white grid place-items-center font-display font-bold">R</div>
       <div>
         <h1 class="font-display text-lg leading-tight font-bold">Exam Photo Resizer</h1>
-        <p class="text-[11px] text-slate-500 -mt-0.5">Crop to the exact cm size &amp; file size a form asks for.</p>
+        <p class="text-[11px] text-slate-500 -mt-0.5">Crop and resize a JPEG using your form’s dimensions and file-size limit.</p>
       </div>
     </div>
     <a href="index.html"
@@ -151,10 +129,10 @@
     <!-- ======================= CONTROLS ======================= -->
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
       <div>
-        <label class="text-sm font-semibold block mb-1">1. What are you uploading?</label>
+        <label for="presetSelect" class="text-sm font-semibold block mb-1">1. What are you uploading?</label>
         <select id="presetSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="photo">Passport-style photo — 3.5 × 4.5 cm (most common: SSC, Railway, IBPS, UPSC)</option>
-          <option value="pan">PAN card photo — 2.5 × 3.5 cm</option>
+          <option value="photo">Portrait preset — 3.5 × 4.5 cm</option>
+          <option value="pan">Small portrait preset — 2.5 × 3.5 cm</option>
           <option value="signature">Signature — 3.5 × 1.5 cm</option>
           <option value="custom">Custom size…</option>
         </select>
@@ -162,22 +140,22 @@
 
       <div id="customFields" class="hidden grid grid-cols-2 gap-3">
         <div>
-          <label class="text-xs font-semibold block mb-1">Width (cm)</label>
+          <label for="customW" class="text-xs font-semibold block mb-1">Width (cm)</label>
           <input id="customW" type="number" step="0.1" min="0.5" value="3.5" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
         </div>
         <div>
-          <label class="text-xs font-semibold block mb-1">Height (cm)</label>
+          <label for="customH" class="text-xs font-semibold block mb-1">Height (cm)</label>
           <input id="customH" type="number" step="0.1" min="0.5" value="4.5" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="text-xs font-semibold block mb-1">DPI (most forms want 200)</label>
+          <label for="dpiInput" class="text-xs font-semibold block mb-1">DPI for pixel calculation</label>
           <input id="dpiInput" type="number" step="1" min="72" value="200" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
         </div>
         <div>
-          <label class="text-xs font-semibold block mb-1">Max file size (KB)</label>
+          <label for="maxKbInput" class="text-xs font-semibold block mb-1">Max file size (KB)</label>
           <input id="maxKbInput" type="number" step="1" min="5" value="50" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"/>
         </div>
       </div>
@@ -186,7 +164,7 @@
 
       <div>
         <div class="flex items-center justify-between mb-1">
-          <label class="text-sm font-semibold block">2. Upload the photo</label>
+          <label for="fileInput" class="text-sm font-semibold block">2. Upload the photo</label>
           <button id="resetBtn" type="button" class="reset-link hidden">Reset</button>
         </div>
         <input id="fileInput" type="file" accept="image/*"
@@ -195,7 +173,7 @@
       </div>
 
       <div id="zoomWrap" class="hidden">
-        <label class="text-sm font-semibold block mb-1">3. Drag to reposition, zoom to fit</label>
+        <label for="zoomSlider" class="text-sm font-semibold block mb-1">3. Drag to reposition, zoom to fit</label>
         <input id="zoomSlider" type="range" min="100" max="300" value="100" class="w-full"/>
         <p class="text-[11px] text-slate-400 mt-1">Tip: you can also nudge the photo with the arrow keys once it's focused.</p>
       </div>
@@ -216,112 +194,33 @@
     </div>
   </div>
 
-  <!-- ======================= CONTENT SECTION ======================= -->
-  <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 text-slate-700 text-sm leading-relaxed">
-    <article>
-      <h2 class="text-xl font-display font-bold text-slate-900 mb-3">How to Use the Exam Photo Resizer Tool</h2>
-      <p class="mb-4">Online application portals for government exams, recruitment drives, and official cards (such as SSC, UPSC, Railway, IBPS, and PAN) require uploaded images to adhere to precise physical dimensions and file size limits. This online cropping and resizing tool helps you transform any personal photo or signature image into an officially compliant file in just a few clicks.</p>
-
-      <ol class="list-decimal list-inside space-y-2 mb-4 font-medium">
-        <li><strong>Select Your Requirements:</strong> Choose a standard preset from the dropdown menu (e.g., standard 3.5 × 4.5 cm passport photo, 2.5 × 3.5 cm PAN photo, or 3.5 × 1.5 cm signature). You can also choose "Custom size..." to manually enter width and height.</li>
-        <li><strong>Configure DPI and File Size:</strong> Input the required DPI (dots per inch)—most government portals request 200 DPI—and set your maximum file size threshold (usually between 20 KB and 50 KB).</li>
-        <li><strong>Upload Your Image:</strong> Click the file input button to select a JPEG or PNG image from your computer or smartphone.</li>
-        <li><strong>Adjust and Position:</strong> Click and drag the image inside the crop canvas to frame your face or signature properly. Use the zoom slider to resize the image or fine-tune alignment using your keyboard arrow keys.</li>
-        <li><strong>Crop &amp; Download:</strong> Click the "Crop, resize &amp; download" button. The system automatically processes the crop, compresses the file to stay below your requested max size in kilobytes (KB), and downloads the file instantly.</li>
-      </ol>
-    </article>
-
-    <hr class="border-slate-200" />
-
-    <article>
-      <h3 class="text-lg font-display font-bold text-slate-900 mb-2">Frequently Asked Questions (FAQ)</h3>
-      <div class="space-y-3">
-        <div>
-          <p class="font-semibold text-slate-900">Is my personal photo uploaded to a server?</p>
-          <p class="text-slate-600">No. All cropping, resizing, and JPEG compression operations happen 100% locally in your web browser using HTML5 Canvas technology. Your photos and signature files never leave your device.</p>
-        </div>
-        <div>
-          <p class="font-semibold text-slate-900">How does the tool ensure the file size remains under the limit?</p>
-          <p class="text-slate-600">The application uses an automated binary search algorithm to calculate the optimal JPEG image compression ratio. It balances maximum visual clarity with strict compliance to your target file size (in KB).</p>
-        </div>
-      </div>
-    </article>
-  </section>
+<section class="reading" id="how-to-use"><div class="eyeline">Crop · Resize · Check</div><h2>How to prepare a photo or signature</h2>
+<p>The Exam Photo Resizer helps you crop an image to a chosen shape, calculate output pixel dimensions from centimeters and a DPI value, and export a JPEG while trying to meet a maximum file size. It is useful when you already know the requirements of an application form. It does not check those requirements for you or certify that a portal will accept the result.</p>
+<p>Before loading a photo, read the instructions for the exact application you are completing. Write down its format, pixel dimensions or physical size, maximum and minimum file size, and any rules about background, framing, recency, or signatures. Different applications can use different rules even when they look similar.</p>
+<h3>Step 1: enter your own requirements</h3><p>Choose one of the dimension presets only if it matches your instructions. Otherwise choose Custom size and enter the width and height in centimeters. The presets are convenient sizes, not official templates for a named exam or agency. Keep the width and height in the correct order; swapping them changes a portrait frame into a landscape frame.</p>
+<p>Enter the DPI value used for the dimension calculation and the maximum file size in KB. The default values are starting points, not recommendations for every form. The tool shows the pixel dimensions before export so you can compare them against the form. If the form specifies pixels directly, use those pixels as the final check.</p>
+<h3>What the DPI field actually does</h3><p>The calculation is pixels = centimeters ÷ 2.54 × DPI, rounded to a whole pixel. For example, 3.5 × 4.5 cm at 200 DPI becomes approximately 276 × 354 pixels. This example describes the calculation only; it is not a current requirement for any exam.</p>
+<p>The DPI input determines the pixel dimensions. This tool does not write your chosen DPI into the JPEG’s resolution metadata. Browsers commonly export canvas images with 96 DPI metadata where supported, as described in the <a href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob">browser canvas export documentation</a>. If a portal checks a metadata DPI value, use an editor that explicitly sets it and verify the resulting file.</p>
+<h3>Step 2: load and frame the image</h3><p>Choose a clear source photo in a format your browser can open. The crop preview shows the part that will be retained. Drag the image underneath the frame to position the subject, then use the zoom slider if you need a tighter crop. Focus the preview and use the arrow keys for small positioning adjustments.</p>
+<p>Keep any required parts of the subject inside the frame. For a signature, check the first and last strokes as well as the top and bottom. For a portrait, avoid trimming the subject just to remove empty space unless the application instructions allow that framing. This tool crops and resizes; it does not replace a background or repair an unsuitable source photo.</p>
+<h3>Step 3: export and inspect</h3><p>Choose Crop, resize &amp; download. The result panel reports the output dimensions, file size, and chosen compression quality. The tool tries several JPEG quality settings and keeps a suitable result when it can fit within your target. If it cannot, it displays a warning rather than guaranteeing success.</p>
+<p>Open the downloaded JPEG before uploading it to the application portal. Inspect the eyes, hair edges, fine signature strokes, and any other details the form needs. A file can fit the size limit and still be too blurry to use. Keep your source photo so that you can make a fresh export instead of repeatedly compressing an already compressed copy.</p>
+<h3>File size and image dimensions are different</h3><p>Pixel dimensions describe the image grid. File size describes how much storage the encoded image occupies. Two 276 × 354 images can have different file sizes because their textures, noise, backgrounds, and compression differ. Changing the filename or its extension does not alter either property in the way a portal expects.</p>
+<p>The tool treats one KB as 1,024 bytes. A portal may report sizes using a different convention or round the display differently, so leave a little room below a maximum if the instructions permit. A maximum-size target also does not enforce a portal’s minimum-size requirement. Check both ends of an allowed range.</p>
+<h3>Why is the result still too large?</h3><p>The allowed quality range may be unable to meet a very small target while keeping the selected dimensions. Start with a cleaner source if available. Reduce dimensions only when the application allows it; making a required image smaller can create a different rejection. If the source and requirements cannot work together here, use an editor with more explicit export controls.</p>
+<h3>Why does the portal reject a file that looks correct?</h3><p>Check the actual file type, width, height, byte size, and any required metadata. Then review subject framing and the form’s own error message. A browser preview cannot determine every acceptance rule. This tool has no connection to the application portal and cannot submit or approve your image.</p>
+<h3>Where does my photo go?</h3><p>Cropping and JPEG encoding run locally in your browser. Selecting a file does not upload it to a Broshere image-processing server. When you later upload the result to a form, that is a separate action on that service. For a practical final review, use the <a href="guides/photo-dimensions.html">photo dimensions and file-size checklist</a>.</p></section>
 </main>
 
-<!-- ======================= BOTTOM ADSTERRA AD BANNER ======================= -->
-<div class="w-full bg-slate-100 border-t border-slate-200 flex justify-center py-2">
-  <script type="text/javascript">
-    atOptions = {
-      'key' : 'YOUR_ADSTERRA_KEY_2',
-      'format' : 'iframe',
-      'height' : 90,
-      'width' : 728,
-      'params' : {}
-    };
-  </script>
-<script>
-  atOptions = {
-    'key' : '089ebc711e21a33d4ffd27ed64959bd8',
-    'format' : 'iframe',
-    'height' : 50,
-    'width' : 320,
-    'params' : {}
-  };
-</script>
-<script src="https://inputoppose.com//invoke.js"></script>
-<div id="container-a2c6f807ae2536b6a5505bc22f7ff1f2"></div>
-</div>
-
 <!-- ======================= FOOTER WITH DIALOG TRIGGERS ======================= -->
-<footer class="text-center text-xs text-slate-400 py-6 space-y-3">
-  <div>100% client-side. Your photo never leaves your device.</div>
-  <div class="flex justify-center items-center gap-4 text-slate-500">
-    <button onclick="document.getElementById('aboutModal').showModal()" class="hover:underline">About</button>
-    <span>•</span>
-    <button onclick="document.getElementById('contactModal').showModal()" class="hover:underline">Contact</button>
-    <span>•</span>
-    <button onclick="document.getElementById('privacyModal').showModal()" class="hover:underline">Privacy Policy</button>
-  </div>
-</footer>
+<footer class="site-footer"><nav aria-label="Site information"><a href="index.html">Home</a><a href="guides/index.html">Guides</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
 
 <!-- ======================= MODAL DIALOGS ======================= -->
-<dialog id="aboutModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
-  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
-    <h3 class="font-display font-bold text-lg text-slate-900">About Broshere</h3>
-    <button onclick="document.getElementById('aboutModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
-  </div>
-  <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
-    <p>Broshere (broshere.com) is a small, solo-built collection of privacy-first web utilities and mini-games.</p>
-    <p>The web utilities process your files, photos, or inputs directly inside your web browser using standard HTML5 features. There's no backend server or database involved in that processing, so nothing you open or edit is uploaded anywhere.</p>
-    <p>New tools and games are added whenever something seems worth building — there's no fixed schedule.</p>
-  </div>
-</dialog>
 
-<dialog id="contactModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
-  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
-    <h3 class="font-display font-bold text-lg text-slate-900">Contact</h3>
-    <button onclick="document.getElementById('contactModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
-  </div>
-  <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
-    <p>Broshere is run by one person, so replies may take a little while, but every message gets read.</p>
-    <p>Have feedback, found a bug, or want to suggest an app? Reach out via email at: <strong class="text-slate-900">podugenerations@gmail.com</strong></p>
-  </div>
-</dialog>
 
-<dialog id="privacyModal" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl max-w-lg w-full m-auto">
-  <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
-    <h3 class="font-display font-bold text-lg text-slate-900">Privacy Policy</h3>
-    <button onclick="document.getElementById('privacyModal').close()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
-  </div>
-  <div class="space-y-3 text-sm text-slate-600 leading-relaxed max-h-[70vh] overflow-y-auto pr-1">
-    <p><strong class="text-slate-900">What we don't collect:</strong> Broshere's tools (photo resizing, media compression, puzzle creation, and similar) run entirely inside your browser. Files, photos, or other data you process through them stay on your device and are never uploaded to, or stored on, any server we operate.</p>
-    <p><strong class="text-slate-900">Advertising:</strong> This site displays third-party ads. Advertising partners may use cookies or similar technologies to serve non-personalized or personalized ads based on your browser interactions.</p>
-    <p><strong class="text-slate-900">Standard web logs:</strong> Like most websites, our hosting provider may log basic technical information (such as IP address and browser type) for security and performance purposes. This isn't used to identify individual visitors personally.</p>
-    <p><strong class="text-slate-900">Children's privacy:</strong> Broshere is not directed at children under 13, and we do not knowingly collect personal information from children.</p>
-    <p><strong class="text-slate-900">Contact:</strong> Questions about this policy can be sent to <strong class="text-slate-900">podugenerations@gmail.com</strong>.</p>
-  </div>
-</dialog>
+
+
+
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -525,7 +424,7 @@ $("generateBtn").addEventListener("click", () => {
       `Output: <b>${pxW}×${pxH}px</b>, <b>${(blob.size / 1024).toFixed(1)} KB</b> ` +
       `(quality ${Math.round(quality * 100)}%)` +
       (under ? " — within your target." :
-        " — couldn't get under the target without becoming too blurry; consider a smaller max size or a simpler background.");
+        " — couldn't get under the target without becoming too blurry; check the required dimensions and try a cleaner source image.");
   });
 });
 

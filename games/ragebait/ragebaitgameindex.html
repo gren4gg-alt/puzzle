@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Choose a level and play Drift Hop, a free browser arcade game from Broshere.">
 <link rel="canonical" href="https://broshere.com/games/ragebait/ragebaitgameindex.html">
 <meta name="theme-color" content="#1b1035">
-<title>RAGEBAIT — Level Select</title>
+<title>Drift Hop / Ragebait — Eight Platform Levels | Broshere</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907" crossorigin="anonymous"></script>
 <style>
   :root{
@@ -146,15 +146,17 @@
   .site-links a{color:var(--soft);text-decoration:none;}
   .site-links a:hover{color:var(--cream);}
 </style>
+<link rel="stylesheet" href="../../assets/editorial.css">
 </head>
 <body>
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="../../index.html">Broshere</a><a href="../../index.html#tools">Tools</a><a href="../../games/gameindex.html">Games</a><a href="../../guides/index.html">Guides</a><a href="../../about.html">About</a><a href="../../contact.html">Contact</a></nav>
 <div id="wrap">
   <button class="back-button" onclick="goBack()">
   ← Back
 </button>
   <header>
-    <h1>RAGEBAIT</h1>
-    <p>pick a level · progress is saved on this device</p>
+    <h1>DRIFT HOP</h1>
+    <p>The Ragebait platform series · progress is saved on this device</p>
   </header>
 
   <div id="stats">
@@ -162,13 +164,13 @@
     <div class="pill">TOTAL FALLS <b id="totalFalls">0</b></div>
   </div>
 
-  <div id="levels"></div>
+  <div id="levels"></div><noscript><p>Turn on JavaScript to play. Read the <a href="../../guides/drift-hop.html">level guide</a> for all eight routes.</p></noscript>
 
   <div id="resetRow">
     <button id="resetBtn">Reset Progress</button>
   </div>
   <section class="game-info" aria-labelledby="drift-hop-info">
-    <h2 id="drift-hop-info">How Drift Hop works</h2>
+    <h2 id="drift-hop-info">How Drift Hop works</h2><p><a href="../../guides/drift-hop.html">Read the complete guide: controls, timing drills, and tips for all eight levels</a>.</p>
     <p>Drift Hop is a timing-based platform game. Watch each island’s movement, wait for a safe landing path, and use careful hops to reach the portal. Levels introduce bounce pads, orbiting platforms, and longer swings as you progress.</p>
     <p>Your cleared levels and best fall counts are stored locally in this browser. No account is required. Broshere may display advertising to keep the game free; learn more in the <a href="../../privacy.html">Privacy Policy</a>.</p>
   </section>
@@ -238,7 +240,7 @@ function goBack(){
   if(document.referrer){
     history.back();
   }else{
-    window.location.href = "../index.html";
+    window.location.href = "../gameindex.html";
   }
 }
 function render(){
@@ -295,5 +297,6 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 
 render();
 </script>
+<footer class="site-footer"><nav aria-label="Site information"><a href="../../index.html">Home</a><a href="../../guides/index.html">Guides</a><a href="../../about.html">About</a><a href="../../contact.html">Contact</a><a href="../../privacy.html">Privacy</a><a href="../../terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
 </body>
 </html>

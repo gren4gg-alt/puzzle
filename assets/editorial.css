@@ -1,0 +1,27 @@
+/* Reading pages and shared navigation; game canvases keep their own layouts. */
+.site-nav,.site-footer,.reading{box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#29261f;line-height:1.75;font-size:16px;text-align:left;letter-spacing:normal}
+.site-nav{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;background:#fffdf8;border-bottom:1px solid #d9d1c2;padding:16px max(20px,calc((100% - 1040px)/2));width:100%;position:relative;z-index:1}
+.site-nav a,.site-footer a,.reading a{color:#765017;text-decoration:underline;text-underline-offset:3px}
+.site-nav a{font-size:14px;font-weight:650;text-decoration:none;white-space:nowrap}
+.site-nav .site-brand{font-size:20px;color:#29261f;margin-right:auto}
+.site-nav a:hover,.site-footer a:hover,.reading a:hover{text-decoration:underline;color:#49300b}
+.site-nav a:focus-visible,.site-footer a:focus-visible,.reading a:focus-visible{outline:3px solid #946424;outline-offset:5px}
+.reading{max-width:960px;margin:32px auto;padding:32px;background:#fffdf8;border:1px solid #d9d1c2;border-radius:16px;width:calc(100% - 32px);overflow-wrap:break-word}
+.reading h1,.reading h2,.reading h3{font-family:inherit;color:#29261f;letter-spacing:-.025em;max-width:none;line-height:1.2;text-transform:none}
+.reading h1{font-size:clamp(30px,5vw,48px);margin:16px 0 20px}
+.reading h2{font-size:26px;margin:36px 0 14px;scroll-margin-top:20px}
+.reading h3{font-size:20px;margin:26px 0 10px}
+.reading p{margin:12px 0;max-width:76ch;color:#514b40;font-size:16px;line-height:1.8}
+.reading ul,.reading ol{margin:16px 0;padding-left:26px;list-style:revert}
+.reading li{margin:8px 0}.reading strong{font-weight:700}.reading .eyeline{color:#765017;font-size:12px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+.reading .lead{font-size:19px;color:#514b40}.reading .note{padding:18px 22px;background:#f3ecde;border-left:4px solid #a87936;border-radius:4px}
+.reading .actions{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}
+.reading .play-link{display:inline-block;padding:12px 22px;background:#29261f;color:#fffdf8;border-radius:8px;text-decoration:none;font-weight:700}
+.reading .play-link:hover{background:#765017;color:white}.reading .toc{padding:18px 24px;border:1px solid #ded6c8;border-radius:10px;background:#faf6ee}
+.reading .toc a{display:inline-block;margin:4px 16px 4px 0}
+.reading .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px 0}
+.reading .guide-card{border:1px solid #ded6c8;border-radius:10px;padding:22px;background:#faf6ee}.reading .guide-card h2,.reading .guide-card h3{margin:0 0 12px;font-size:22px}.reading .guide-card p{margin:8px 0}
+.reading .table-scroll{overflow:auto}.reading table{border-collapse:collapse;width:100%;font-size:15px;margin:20px 0}.reading th,.reading td{border:1px solid #d9d1c2;text-align:left;padding:12px;vertical-align:top}.reading th{background:#f3ecde}
+.reading .byline{font-size:13px;color:#6c6253}.site-footer{width:100%;background:#fffdf8;border-top:1px solid #d9d1c2;padding:24px;text-align:center;margin-top:32px}.site-footer nav{display:flex;justify-content:center;gap:12px 22px;flex-wrap:wrap}.site-footer p{font-size:13px;margin:14px 0 0}
+.reading-page{margin:0;background:#f2ede2;color:#29261f}.skip-link{position:absolute;left:16px;top:-100px;z-index:500;padding:12px;background:white;color:#29261f}.skip-link:focus{top:8px}
+@media(max-width:600px){.reading{padding:22px;margin:22px auto}.reading .cards{grid-template-columns:1fr}.site-nav{gap:8px 18px;padding:12px 18px}.site-nav .site-brand{flex-basis:100%}.reading h2{font-size:23px}}

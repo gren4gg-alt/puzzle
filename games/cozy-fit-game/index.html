@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fff7e8" />
+  <title>Cozy Fit — 50 Shape-Packing Puzzles | Broshere</title>
+<meta name="description" content="Play Cozy Fit: 50 colorful packing puzzles with drag-and-drop pieces, rotation, smart hints, and locally saved progress. Read the rules and strategies.">
+<link rel="canonical" href="https://broshere.com/games/cozy-fit-game/index.html">
+  <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="../../assets/editorial.css">
+<style>body.playing-game > .site-nav,body.playing-game > .site-footer{display:none}.cozy-guide-link{display:block;text-align:center;color:#5a46b2;font:600 14px/1.6 system-ui;margin:16px 0;text-underline-offset:3px}.home-screen .reading{width:100%;margin-bottom:0}</style>
+</head>
+<body>
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="../../index.html">Broshere</a><a href="../../index.html#tools">Tools</a><a href="../../games/gameindex.html">Games</a><a href="../../guides/index.html">Guides</a><a href="../../about.html">About</a><a href="../../contact.html">Contact</a></nav>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand-wrap brand-button" id="brandHomeBtn" type="button" aria-label="Go to level map">
+        <div class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="brand-copy">
+          <p class="eyebrow">tiny puzzle toy</p>
+          <h1>Cozy Fit</h1>
+        </div>
+      </button>
+
+      <div class="top-actions">
+        <button class="icon-button home-nav hidden" id="homeBtn" type="button" aria-label="Back to level map" title="Level map">
+          <span class="icon" aria-hidden="true">⌂</span>
+        </button>
+        <button class="icon-button" id="soundBtn" type="button" aria-label="Toggle sound effects" title="Sound effects">
+          <span class="icon" aria-hidden="true">🔊</span>
+        </button>
+        <button class="icon-button" id="musicBtn" type="button" aria-label="Toggle music" title="Music">
+          <span class="icon" aria-hidden="true">♫</span>
+        </button>
+        <button class="icon-button" id="fullscreenBtn" type="button" aria-label="Enter full screen" title="Full screen · F">
+          <span class="icon" aria-hidden="true">⛶</span>
+        </button>
+        <button class="icon-button" id="settingsBtn" type="button" aria-label="Open settings" title="Settings">
+          <span class="icon" aria-hidden="true">⚙</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="home-screen" id="homeScreen">
+      <section class="home-hero" aria-labelledby="journeyTitle">
+        <div class="home-hero-copy">
+          <p class="eyebrow">YOUR PUZZLE JOURNEY</p>
+          <h2 id="journeyTitle">Follow the cozy trail.</h2>
+          <p>Each stop is a new shape to solve. Finish a level to open the next one, or revisit an old favorite whenever you want.</p>
+        </div>
+        <button class="continue-button" id="continueBtn" type="button">
+          <span class="continue-icon" aria-hidden="true">▶</span>
+          <span><small>continue from</small><strong id="continueLabel">Level 1</strong></span>
+          <span class="continue-arrow" aria-hidden="true">→</span>
+        </button>
+      </section>
+
+      <p class="cozy-guide-link"><a href="../../guides/cozy-fit.html">New here? Read the controls, packing strategies, and Help guide →</a></p>
+<section class="map-card" aria-label="Level map">
+        <div class="map-card-head">
+          <div>
+            <p class="eyebrow">COZY TRAIL</p>
+            <h2>Choose a level</h2>
+          </div>
+          <div class="map-progress" aria-live="polite">
+            <strong id="mapProgressText">1 / 50 open</strong>
+            <span>highest level is glowing</span>
+          </div>
+        </div>
+
+        <div class="level-map-scroll" id="levelMapScroll" tabindex="0" aria-label="Scrollable puzzle level map">
+          <div class="level-map" id="levelMap">
+            <svg class="map-road" id="mapRoad" aria-hidden="true"></svg>
+            <div id="mapDecor" aria-hidden="true"></div>
+            <div class="map-nodes" id="mapNodes"></div>
+          </div>
+        </div>
+
+        <div class="map-legend" aria-label="Map legend">
+          <span><i class="legend-dot complete"></i> cleared</span>
+          <span><i class="legend-dot current"></i> next stop</span>
+          <span><i class="legend-dot locked"></i> locked</span>
+        </div>
+      </section>
+
+<section class="reading" id="how-to-play"><div class="eyeline">A little space for careful thinking</div><h2>How to play Cozy Fit</h2><p>Fill the pale puzzle silhouette with all the colorful pieces parked around it. Every piece must stay inside the playable shape, and pieces cannot overlap. The board is complete when all its active cells are filled. Holes and cutouts belong to the silhouette, so leave them empty.</p><h3>Start with the trail</h3><p>Choose Continue to open the highest level you have unlocked, or select a completed level to replay it. The 50-level trail begins with large square blocks, then introduces mixed pieces, rotation, narrow corridors, and shapes with internal gaps. Completing a level opens the next stop.</p><h3>Drag, select, and rotate</h3><p>Drag a piece toward the board and follow the snapping preview. Tap a piece to select it; tap again to deselect it. Rotation becomes available in level 3: select a piece, finish any drag, and press Rotate or R. To undo a placement, pick the piece up again. Drag it outside until DROP TO REMOVE appears to return it to its parking spot.</p><h3>Read the remaining space</h3><p>A piece can fit legally and still make the rest of the board impossible. Look for small pockets that none of your remaining pieces can fill. Try saving long straight pieces for narrow passages, and compare a piece’s corners with the board’s inside and outside edges before placing it in a roomy central area.</p><h3>Use Help to learn</h3><p>Help me or H checks your current arrangement. It can highlight a safe next placement, or suggest removing a piece when the board has become tangled. The game can accept more than one valid solution. A hint is most useful when you study which space it preserves for your remaining pieces.</p><h3>Play at your own pace</h3><p>Moves and time help you compare attempts, but you can finish a level before worrying about stars or speed. Settings lets you control sound effects and music separately, reduce motion, and use fullscreen. Progress and best times are saved in this browser; they do not transfer through an online account.</p><p>Read the <a href="../../guides/cozy-fit.html">full Cozy Fit guide</a> for the first-board example, star rules, hint limitations, and answers to common control problems. For a different kind of puzzle, try creating a <a href="../../puzzle-exchange.html">photo puzzle to share</a>.</p></section>
+      <section class="web-ad-slot" id="webAdSlot" aria-label="Advertisement" hidden>
+        <span class="web-ad-label">Advertisement</span>
+        <div class="web-ad-stage"></div>
+      </section>
+    </main>
+
+    <main class="game-layout screen-hidden" id="gameScreen">
+      <section class="game-card" aria-label="Puzzle game">
+        <div class="game-card-head">
+          <div>
+            <p class="eyebrow" id="levelKicker">TUTORIAL · LEVEL 1 OF 50</p>
+            <h2 id="levelTitle">Hello, Little Blocks!</h2>
+          </div>
+
+          <div class="stats" aria-label="Game stats">
+            <div class="stat">
+              <span>moves</span>
+              <strong id="moveCount">0</strong>
+            </div>
+            <div class="stat">
+              <span>time</span>
+              <strong id="timer">0:00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-area">
+          <svg id="gameSvg" viewBox="0 0 900 980" role="application" aria-label="Drag the colorful puzzle pieces around the play area into the pale puzzle silhouette">
+            <defs>
+              <linearGradient id="woodGradient" x1="0" x2="0.85" y1="0" y2="1">
+                <stop offset="0" stop-color="#f9dfb7" />
+                <stop offset="0.52" stop-color="#f3c98f" />
+                <stop offset="1" stop-color="#edbd80" />
+              </linearGradient>
+              <linearGradient id="woodHighlight" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#fff4db" />
+                <stop offset="1" stop-color="#f4cf9b" />
+              </linearGradient>
+              <linearGradient id="slotGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#fffdf8" />
+                <stop offset="1" stop-color="#fbf3e7" />
+              </linearGradient>
+              <filter id="boardShadow" x="-35%" y="-35%" width="170%" height="185%">
+                <feDropShadow dx="0" dy="13" stdDeviation="15" flood-color="#9d6f4f" flood-opacity="0.12" />
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#8e674d" flood-opacity="0.07" />
+              </filter>
+              <filter id="pieceShadow" x="-45%" y="-45%" width="190%" height="200%">
+                <feDropShadow dx="0" dy="9" stdDeviation="6" flood-color="#6b4b58" flood-opacity="0.24" />
+                <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#553c48" flood-opacity="0.14" />
+              </filter>
+              <filter id="slotShadow" x="-30%" y="-30%" width="160%" height="170%">
+                <feDropShadow dx="0" dy="2.5" stdDeviation="2.4" flood-color="#a36c3d" flood-opacity="0.16" />
+              </filter>
+              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            <g id="boardLayer"></g>
+            <g id="ghostLayer" pointer-events="none"></g>
+            <g id="pieceLayer"></g>
+            <g id="effectsLayer" pointer-events="none"></g>
+          </svg>
+        </div>
+
+        <div class="level-dots" id="levelDots" aria-label="Quick level progress"></div>
+      </section>
+
+      <aside class="side-card" aria-label="Game controls">
+        <div class="mascot-zone">
+          <div class="speech" id="speechBubble" aria-live="polite">Pick a piece. I believe in tiny victories ✨</div>
+          <div class="mascot" id="mascot" aria-hidden="true">
+            <div class="mascot-ear ear-left"></div>
+            <div class="mascot-ear ear-right"></div>
+            <div class="mascot-face">
+              <span class="eye eye-left"></span>
+              <span class="eye eye-right"></span>
+              <span class="mouth"></span>
+              <span class="cheek cheek-left"></span>
+              <span class="cheek cheek-right"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-stack">
+          <button class="big-button primary" id="rotateBtn" type="button">
+            <span class="button-icon" aria-hidden="true">↻</span>
+            <span><strong>Rotate</strong><small>selected piece · R</small></span>
+          </button>
+          <button class="big-button" id="helpBtn" type="button">
+            <span class="button-icon" aria-hidden="true">?</span>
+            <span><strong>Help me</strong><small>check mistakes & dead ends · H</small></span>
+          </button>
+          <button class="big-button ghost" id="resetBtn" type="button">
+            <span class="button-icon" aria-hidden="true">⟲</span>
+            <span><strong>Restart</strong><small>fresh tray, same puzzle</small></span>
+          </button>
+        </div>
+
+        <div class="mini-guide">
+          <div class="guide-icon" aria-hidden="true">☝</div>
+          <p><strong>Tap to select. Tap again to deselect.</strong><br />A selected piece gets a clear outline. Drag any piece to move it, pull a placed piece outside to remove it, and use <strong>Help</strong> for dead ends. <strong>F</strong> toggles full screen.</p>
+        </div>
+
+        <a class="cozy-guide-link" href="../../guides/cozy-fit.html">Read the full puzzle guide</a><a class="cozy-guide-link" href="../gameindex.html">All Broshere games</a>
+<div class="best-time">
+          <span>best cozy time</span>
+          <strong id="bestTime">—</strong>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="settings-overlay hidden" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <section class="settings-panel" aria-label="Game settings">
+      <div class="settings-head">
+        <div>
+          <p class="eyebrow">COZY CONTROLS</p>
+          <h2 id="settingsTitle">Settings</h2>
+        </div>
+        <button class="settings-close" id="settingsCloseBtn" type="button" aria-label="Close settings">×</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span class="settings-section-icon" aria-hidden="true">♪</span>
+          <div><strong>Sound & play</strong><small>Make the toy feel right for you.</small></div>
+        </div>
+
+        <label class="setting-row" for="settingsSoundToggle">
+          <span><strong>Sound effects</strong><small>Clicks, pops, snaps and celebrations.</small></span>
+          <input class="setting-switch" id="settingsSoundToggle" type="checkbox" checked />
+        </label>
+        <label class="setting-row" for="settingsMusicToggle">
+          <span><strong>Background music</strong><small>The gentle looping puzzle melody.</small></span>
+          <input class="setting-switch" id="settingsMusicToggle" type="checkbox" checked />
+        </label>
+        <label class="setting-row" for="settingsMotionToggle">
+          <span><strong>Reduce motion</strong><small>Turns off most bouncing and decorative movement.</small></span>
+          <input class="setting-switch" id="settingsMotionToggle" type="checkbox" />
+        </label>
+        <button class="setting-row setting-action-row" id="settingsFullscreenBtn" type="button">
+          <span><strong>Full screen</strong><small id="settingsFullscreenStatus">Use the whole screen while playing.</small></span>
+          <span class="setting-row-arrow" aria-hidden="true">⛶</span>
+        </button>
+      </div>
+
+      <div class="settings-section privacy-settings">
+        <div class="settings-section-title">
+          <span class="settings-section-icon" aria-hidden="true">◉</span>
+          <div><strong>Privacy & ads</strong><small>Your advertising and consent controls.</small></div>
+        </div>
+
+        <div class="ads-explainer">
+          <strong>Your puzzle progress stays in this browser.</strong>
+          <p>Advertising is disabled in this web game. Settings and best times are stored locally; read the site Privacy Policy for hosting and other pages.</p>
+        </div>
+
+        <div class="settings-detail-grid" aria-live="polite">
+          <div><span>Ad service</span><strong id="settingsAdPlatform">Google ads</strong></div>
+          <div><span>Privacy status</span><strong id="settingsConsentStatus">Checking…</strong></div>
+        </div>
+        <div class="settings-test-badge hidden" id="settingsTestAdsBadge">Test ads are enabled</div>
+
+        <button class="settings-action primary" id="privacyAdsBtn" type="button" disabled>
+          <span>Manage privacy choices</span><small id="privacyAdsHint">Available when Google consent controls are ready.</small>
+        </button>
+        <a class="settings-action" id="privacyPolicyLink" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">
+          <span>Privacy policy</span><small id="privacyPolicyHint">Read the Broshere Privacy Policy.</small>
+        </a>
+        <a class="settings-action hidden" id="termsLink" href="#" target="_blank" rel="noopener noreferrer">
+          <span>Terms of use</span><small>Read the game terms.</small>
+        </a>
+        <a class="settings-action hidden" id="supportLink" href="#">
+          <span>Contact support</span><small id="supportHint">Email us about the game.</small>
+        </a>
+
+        <p class="privacy-footnote">The privacy policy explains local storage and any third-party services used elsewhere on Broshere.</p>
+      </div>
+
+      <div class="settings-section about-settings">
+        <div class="settings-section-title">
+          <span class="settings-section-icon" aria-hidden="true">♥</span>
+          <div><strong>About Cozy Fit</strong><small>A small puzzle toy built for short, calm sessions.</small></div>
+        </div>
+        <div class="about-row"><span>Version</span><strong id="settingsVersion">—</strong></div>
+        <div class="about-row"><span>Progress</span><strong>Saved on this device</strong></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="win-overlay hidden" id="winOverlay" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <div class="win-card">
+      <div class="win-burst" aria-hidden="true">✦</div>
+      <p class="eyebrow">PUZZLE COMPLETE</p>
+      <h2 id="winTitle">Perfect fit!</h2>
+      <p class="win-copy" id="winCopy">That board looks ridiculously happy.</p>
+      <div class="stars" id="winStars" aria-label="3 stars">★ ★ ★</div>
+      <div class="win-stats">
+        <div><span>time</span><strong id="winTime">0:00</strong></div>
+        <div><span>moves</span><strong id="winMoves">0</strong></div>
+      </div>
+      <div class="win-actions">
+        <button class="big-button ghost compact" id="replayBtn" type="button">Play again</button>
+        <button class="big-button primary compact" id="nextBtn" type="button">Next puzzle →</button>
+      </div>
+      <button class="map-return-button" id="winMapBtn" type="button">← Back to level map</button>
+    </div>
+  </div>
+
+  <footer class="site-footer"><nav aria-label="Site information"><a href="../../index.html">Home</a><a href="../../guides/index.html">Guides</a><a href="../../about.html">About</a><a href="../../contact.html">Contact</a><a href="../../privacy.html">Privacy</a><a href="../../terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
+<script src="ads-config.js"></script>
+  <script src="ad-manager.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

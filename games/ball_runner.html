@@ -6,8 +6,7 @@
 <meta name="description" content="Play ROLL, a free endless runner browser game from Broshere.">
 <link rel="canonical" href="https://broshere.com/games/ball_runner.html">
 <title>ROLL — Endless Runner</title>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6356453773418907"
-     crossorigin="anonymous"></script>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   *{ user-select:none; -webkit-user-select:none; }
@@ -44,13 +43,14 @@
   }
   #rotateOverlay .icon{ animation: rotateHint 1.6s ease-in-out infinite; }
 </style>
+<style>.game-reading-links{display:flex;gap:8px 16px;flex-wrap:wrap;justify-content:center;max-width:520px;margin:12px auto;font:12px/1.5 system-ui,sans-serif;letter-spacing:normal;pointer-events:auto;flex-shrink:0}.game-reading-links a{color:#f4ddb4;text-decoration:underline;text-underline-offset:3px;padding:3px}.game-reading-links a:focus-visible{outline:2px solid #f4ddb4;outline-offset:3px}</style>
 </head>
 <body class="m-0 h-screen w-screen bg-[#0d0d10] text-[#eef1f4] font-sans overflow-hidden flex items-center justify-center p-0">
 
 <div id="rotateOverlay" class="fixed inset-0 z-50 bg-[#0d0d10] flex-col items-center justify-center gap-4 text-center p-6">
   <div class="icon text-6xl">📱</div>
   <h2 class="text-xl font-bold tracking-wide">Rotate your device</h2>
-  <p class="text-sm opacity-75 max-w-[280px]">ROLL is a landscape game — turn your phone sideways to play.</p>
+  <p class="text-sm opacity-75 max-w-[280px]">ROLL is a landscape game — turn your phone sideways to play.</p><nav class="game-reading-links" aria-label="Game guide and site information"><a href="../guides/ball-runner.html">Full guide &amp; strategy</a><a href="../games/gameindex.html">All games</a><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a></nav>
 </div>
 
 <div id="wrap" class="relative rounded-xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] ring-2 ring-black">
@@ -99,7 +99,7 @@
       <span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">A</span><span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">D</span>/<span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">←</span><span class="bg-white/10 border border-white/30 rounded px-2 py-0.5 mx-0.5 font-mono text-xs">→</span> Dodge<br>
       <b>Touch Screen:</b> Use the on-screen buttons — ◀▶ to move, ▲ to jump (tap twice to double‑jump), ▼ to duck.
     </p>
-    <div class="flex gap-3 items-center flex-wrap justify-center">
+    <nav class="game-reading-links" aria-label="Game guide and site information"><a href="../guides/ball-runner.html">Full guide &amp; strategy</a><a href="../games/gameindex.html">All games</a><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a></nav><div class="flex gap-3 items-center flex-wrap justify-center">
       <button id="go" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full border-none cursor-pointer tracking-wider bg-[#ff5d3b] text-white shadow-[0_8px_18px_rgba(255,93,59,0.4)] hover:-translate-y-0.5 hover:scale-105 transition-all duration-150">START RUN</button>
       <button id="btnHelpMenu" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full cursor-pointer tracking-wider bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:-translate-y-0.5 transition-all duration-150">❓ HOW TO PLAY</button>
       <button id="homeBtnMenu" class="mt-1.5 px-7 py-3 text-base font-bold rounded-full cursor-pointer tracking-wider bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:-translate-y-0.5 transition-all duration-150">🏠 HOME</button>

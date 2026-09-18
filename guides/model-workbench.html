@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D model compression and conversion guide | Broshere</title>
+<meta name="description" content="Use Model Workbench to compare 3D formats, reduce geometry and texture size, check animations, and troubleshoot GLB, glTF, FBX, OBJ and STL exports.">
+<link rel="canonical" href="https://broshere.com/guides/model-workbench.html">
+<link rel="stylesheet" href="../assets/editorial.css">
+</head>
+<body class="reading-page">
+<a class="skip-link" href="#main">Skip to guide</a>
+<nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="../index.html">Broshere</a><a href="../index.html#tools">Tools</a><a href="../games/gameindex.html">Games</a><a href="index.html">Guides</a><a href="../about.html">About</a><a href="../contact.html">Contact</a></nav>
+<main class="reading" id="main">
+<div class="eyeline">Broshere field guide</div>
+<h1>Make a smaller 3D model you can still use</h1>
+<p class="lead">Choose an output your project can read, reduce the right part of the asset, and inspect the exported result before replacing the original.</p>
+<p class="byline">Broshere · Updated September 18, 2026 · Based on Model Workbench’s controls and export pipeline</p>
+<div class="actions"><a class="play-link" href="../model-workbench.html">Open Model Workbench</a><a href="../model-workbench.html#how-to-use">Quick start</a></div>
+<nav class="toc" aria-label="On this page"><a href="#first-run">Your first comparison</a><a href="#formats">Choose a format</a><a href="#size">Find the expensive part</a><a href="#target">Use a target size</a><a href="#quality">Inspect the result</a><a href="#units">Units and orientation</a><a href="#exports">Batch and export</a><a href="#problems">Troubleshooting</a></nav>
+
+<h2 id="first-run">Start with a repeatable comparison</h2>
+<p>Keep the source asset and any editable project files. Model Workbench creates a working glTF representation; formats such as FBX and OBJ pass through an import step before optimization. That step may approximate a material or omit a feature. The Original button shows this imported baseline, not a live view from the application that created your source.</p>
+<p>For a first visit, choose Try sample model. It generates a checker-textured knot with a short animation locally. There is no separate asset to fetch, and no personal file is needed. Use it to learn the preview, inspect triangle and texture counts, and compare profiles. Its behavior is a useful demonstration, not a benchmark for every production model.</p>
+<p>For your own asset, add the model and all companion files in one selection, folder, or ZIP. Preserve relative folders when textures share a filename. Automatic processing is initially on; switch it off under Output if you prefer to set a profile first. Select GLB as the destination for an initial comparison, leave Target size blank, and optimize once.</p>
+
+<h2 id="formats">Choose the format your destination needs</h2>
+<p>A familiar extension does not guarantee the same feature support in every importer. The destination application, its version, and installed loaders all matter. Same as source selects a matching writer where one exists. DAE and 3MF imports become GLB; this workbench does not export those two source formats.</p>
+<div class="table-scroll"><table><thead><tr><th>Output</th><th>Useful for</th><th>Check before using it</th></tr></thead><tbody>
+<tr><td>GLB / glTF</td><td>Web delivery and projects that accept glTF scenes</td><td>Compression extensions, textures, animation, and retained hierarchy. Separate glTF files are downloaded as a ZIP.</td></tr>
+<tr><td>FBX</td><td>Workflows expecting binary FBX, including supported animation and skin data</td><td>Material appearance, skeleton behavior, blend shapes, and every animation take in the target importer.</td></tr>
+<tr><td>OBJ + MTL</td><td>Static meshes with companion material and texture files</td><td>Keep the ZIP contents together. Animation and bones are not retained as animation.</td></tr>
+<tr><td>STL</td><td>Triangle geometry for a downstream mesh or printing workflow</td><td>Units, dimensions, watertightness, and printability. A successful export does not repair a mesh for printing.</td></tr>
+<tr><td>PLY</td><td>Geometry and supported vertex colors</td><td>Whether you need faces or points; textures and animation are not carried into this output.</td></tr>
+<tr><td>USDZ</td><td>A candidate asset for Apple AR viewing</td><td>Scale, materials, and device behavior. This workbench does not export animation to USDZ.</td></tr>
+</tbody></table></div>
+<p>Game engine import avoids geometry-compression extensions and uses conventional image formats. Web delivery enables Meshopt geometry and WebP textures. Low GPU memory selects KTX2 textures. Choose according to your loader instead of assuming the smallest download will open everywhere. The <a href="https://threejs.org/docs/pages/GLTFLoader.html">official three.js GLTFLoader documentation</a> describes the decoder setup for Draco, Meshopt, and KTX2 assets.</p>
+
+<h2 id="size">Find out what is taking space</h2>
+<p>Look at the File size panel and the Meshes, Textures, and Animations tabs before moving sliders. A detailed scan may spend much of its size on geometry; a low-polygon product can still contain large images. The most useful first change depends on which data dominates.</p>
+<p>For a texture-heavy asset, lower Max size one step and compare at the expected viewing distance. Reducing a square texture from 2048 to 1024 pixels cuts its pixel count to one quarter, but does not promise the encoded file will become exactly four times smaller. Check labels, transparency, roughness, and normal-map detail as well as the base color.</p>
+<p>For geometry-heavy assets, enable Reduce triangle count and start gently. The ratio is a simplification request, not a guarantee that every mesh reaches the requested count. Error tolerance and locked borders can limit reduction. Examine curved outlines, holes, thin handles, and joints; a shape may look acceptable head-on while its side profile has changed.</p>
+<p>Geometry compression and simplification are separate controls. Compression changes how attributes are stored; simplification removes geometric detail. Quantization and lossy filtering can also change precision. “Lossless cleanup only” avoids triangle reduction and texture re-encoding, but cleanup still reorganizes data, and the preceding format conversion can change source features.</p>
+<p>Download size is not graphics memory. PNG, JPEG, and WebP are decoded for rendering; KTX2 can use compressed texture formats on supported graphics hardware. Encoding KTX2 can take longer, and a smaller memory footprint does not guarantee a smaller file. Already-KTX2 textures are kept by this pipeline, so a lower texture limit may not shrink them.</p>
+
+<h2 id="target">Treat target size as a search, not a promise</h2>
+<p>First establish a result without a target. If that result is too large, enter a limit and choose Protect. Texture sharpness allows triangle reduction earlier; Shape detail reduces textures earlier; Balance changes both. The search tries up to nine combinations and reports whether it reached the limit.</p>
+<p>For example, if a model needs a 5 MB upload limit, begin slightly below that limit and verify the actual downloaded bytes. The workbench labels 1,048,576 bytes as MB, while another service may use 1,000,000 bytes. A result that looks close in a rounded display can still exceed the destination’s rule.</p>
+<p>Selected quality — no extra reductions runs your current settings without the target search making them harsher. It does not turn an already selected JPEG conversion or triangle reduction into a lossless operation. If the target is missed, decide which visible detail you can give up, or raise the limit. Do not assume a smaller file is automatically the better asset.</p>
+
+<h2 id="quality">Review what a file-size number cannot tell you</h2>
+<p>Compare Original and Optimized from matching angles. Drag to orbit, use the wheel or a pinch to zoom, and choose Frame if the model is off-screen. Wireframe reveals changed topology; the floor grid helps you judge placement. The B, W, G, and F shortcuts switch the comparison, wireframe, grid, and framing when you are not typing in a field.</p>
+<p>For an animated model, select and watch every available clip. Pay attention to shoulders, elbows, fingers, and extreme poses. A mesh that looks correct in its rest pose may deform poorly after reduction. Check blend shapes and material changes in the destination application as well, because a single preview does not exercise every feature.</p>
+<p>Validation checks the working GLB and reports structural issues. It does not certify another export format, visual quality, or performance on a phone. This tool filters certain image-format messages from its pinned validator and identifies that limitation in the results. Read warnings and Log, then reopen the actual download. Save PNG captures the view; it is a picture, not a replacement for the model.</p>
+
+<h2 id="units">Make scale and orientation deliberate</h2>
+<p>OBJ, STL, and PLY do not provide a reliable unit choice for this workflow. If a part was authored in millimeters, choose Millimeters → m under Import before judging its size. FBX units are read automatically here; an additional manual scale is a further conversion. Avoid compensating for a camera-framing problem by changing the asset’s scale.</p>
+<p>Use Z-up → Y-up only when the imported orientation needs that change. Center or Bottom center can reposition a pivot, but a carefully authored hierarchy may rely on its existing origin. Leave the pivot unchanged when preparing a rig or a part that must align with other assets, and confirm measurements after export.</p>
+
+<h2 id="exports">Batch carefully and keep the report</h2>
+<p>Each recognized model becomes a queue item. Select a row with a click or focus it and press Enter. Optimize processes the selection; Optimize all processes queued or changed items. Download all packs completed outputs into a ZIP. Resources are associated with the files added together, so re-add a complete package if an earlier selection omitted its textures.</p>
+<p>The main Download uses your chosen output format. Extra export buttons build from the optimized working model. Formats cannot recover features you already removed. The LOD set creates several reduction levels, but their actual triangle counts can differ from the nominal ratios. Reopen each level and decide where your application should switch between them.</p>
+<p>The JSON report records settings, sizes, statistics, validation, and processing messages. Keep it alongside an approved asset so you can reproduce your choice. Settings persist locally; the queue and generated outputs do not survive a page reload. Download results before closing the tab.</p>
+
+<h2 id="problems">Troubleshoot the cause, not the symptom</h2>
+<h3>The preview is white or textures are missing</h3><p>Read the Log for missing resources and material conversions. Add the original package with its MTL, BIN, and images. Remote resource addresses inside a model are not fetched automatically. A higher quality slider cannot restore a missing image or an unsupported source material.</p>
+<h3>The model is larger after optimization</h3><p>Format overhead, added attributes, or image conversion can increase size. Compare equivalent formats and inspect the breakdown. For small models, preserving an already efficient source may be the best choice.</p>
+<h3>The page stops responding or cannot load</h3><p>Try a smaller model and process one at a time. Large decoded textures, previews, and intermediate exports consume more memory than the source file alone suggests. Libraries and fonts still need network access even though model processing is local. Check the startup message and use a browser with WebGL support.</p>
+<p>For a reproducible issue, send the page name, browser, input/output formats, chosen profile, and relevant error text through <a href="../contact.html">Contact</a>. Do not send a private production asset when a small non-sensitive example can demonstrate the same problem. For ordinary photos, audio, or video, use the separate <a href="../media-compressor.html">Media Compressor</a>.</p>
+<div class="actions"><a class="play-link" href="../model-workbench.html">Try the workbench</a><a href="index.html">All guides</a></div>
+</main>
+<footer class="site-footer"><nav aria-label="Site information"><a href="../index.html">Home</a><a href="index.html">Guides</a><a href="../about.html">About</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav><p>Broshere · Independent browser tools and games</p></footer>
+</body>
+</html>

@@ -1,21 +1,8 @@
-BROSHERE SITE PAGES
+BROSHERE WEBSITE
 
-Files:
-- about.html
-- contact.html
-- privacy.html
-- terms.html
+Read README.md for structure, preview, checks, and publishing notes.
+Read ADSENSE-READINESS.md for improvements and live review preparation.
 
-Upload these to your website's public root (or adapt the paths if your site uses a different routing system).
-
-Recommended footer:
-About | Contact | Privacy Policy | Terms
-
-Recommended URLs:
-https://broshere.com/about.html
-https://broshere.com/contact.html
-https://broshere.com/privacy.html
-https://broshere.com/terms.html
-
-Important:
-Review the Privacy Policy and Terms against the services actually used by your website (AdSense, analytics, hosting/CDN, etc.) before publishing. These pages are a practical starting point, not legal advice.
+Cozy Fit is integrated under games/cozy-fit-game/.
+Model Workbench is integrated at model-workbench.html, with a full guide.
+These local changes have not been published.
